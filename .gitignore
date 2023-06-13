@@ -3,3 +3,4 @@
 .python-version
 *.egg-info/
 build/
+__pycache__/

@@ -1,7 +1,7 @@
-import numpy as np
 import typing as tp
-import seaborn as sns
 
+import numpy as np
+import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib import colormaps as cm
 
