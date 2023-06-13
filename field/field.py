@@ -6,28 +6,15 @@ from matplotlib import pyplot as plt
 from matplotlib import colormaps as cm
 
 
-def gaussian(x: float, y: float, centre: tuple[float, float]):
-    """
-
-    Args:
-        x:
-        y:
-        centre:
-        sigma:
-
-    Returns:
-
-    """
+def gaussian(x: float, y: float, centre: tuple[float, float], sigma: float = 10):
     x0: float = centre[0]
     y0: float = centre[1]
-
-    sigma = 10
 
     return (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-((x - x0)**2 + (y - y0)**2)/(2*sigma))
 
 
 class Field:
-    def __init__(self, height: int, width: int,
+    def __init__(self, height: float, width: float,
                  target_function: tp.Callable[[float, float, tuple[float, float]], float]):
         self._height = height
         self._width = width
@@ -56,17 +43,14 @@ class Field:
         coordinates = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
 
         values = np.array([self.target_function(x, y, centre) for x, y in coordinates])
-
         values = values.reshape((len(x_values), len(y_values)))
 
         sns.heatmap(values, cmap=cm["hot"])
         plt.axis('off')
 
         fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-
         surf = ax.plot_surface(x_grid, y_grid, values, cmap=cm["hot"],
                                linewidth=0, antialiased=False)
-
         fig.colorbar(surf, ax=ax, shrink=0.5, aspect=15)
 
         plt.show()
