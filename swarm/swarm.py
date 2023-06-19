@@ -1,4 +1,6 @@
 import sys
+from time import sleep
+import os
 import typing as tp
 
 import numpy as np
@@ -7,7 +9,7 @@ from numpy.random import uniform
 
 
 # just in case I don't know how to properly pre-define class in Python I use this
-# '' typing for the Swamp instance
+# '' typing for the Swarm instance
 class Particle:
     def __init__(self, swarm: 'Swarm'):
         self._swarm: 'Swarm' = swarm
@@ -22,7 +24,7 @@ class Particle:
                                                    uniform(-field_height, field_height)])
         elif self.swarm.scene.spawn_type == "edges":
             edge: int = np.random.randint(4)
-            if edge == 0:    # left
+            if edge == 0:  # left
                 self._position: np.ndarray = np.array([0, uniform(0, field_height)])
                 self._velocity: np.ndarray = np.array([uniform(0, field_width), uniform(-field_height, field_height)])
             elif edge == 1:  # right
@@ -31,43 +33,39 @@ class Particle:
             elif edge == 2:  # top
                 self._position: np.ndarray = np.array([uniform(0, field_width), 0])
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(0, field_height)])
-            else:            # bottom
+            else:  # bottom
                 self._position: np.ndarray = np.array([uniform(0, field_width), field_height])
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
         elif self.swarm.scene.spawn_type == "small_area":
-            factor: float = self.swarm.scene.factor
+            factor: float = self.swarm.scene.position_scale
             start_location: np.ndarray = self.swarm.scene.spawn_start_location
-            if self.swarm.scene.edge == 0:    # left
-                self._position: np.ndarray = np.array([0, uniform(start_location[1] - field_height/factor,
-                                                                  start_location[1] + field_height/factor)])
+            if self.swarm.scene.edge == 0:  # left
+                self._position: np.ndarray = np.array([0, uniform(start_location[1] - field_height / factor,
+                                                                  start_location[1] + field_height / factor)])
                 self._velocity: np.ndarray = np.array([uniform(0, field_width),
                                                        uniform(-field_height, field_height)])
             elif self.swarm.scene.edge == 1:  # right
-                self._position: np.ndarray = np.array([field_width, uniform(start_location[1] - field_height/factor,
-                                                                            start_location[1] + field_height/factor)])
+                self._position: np.ndarray = np.array([field_width, uniform(start_location[1] - field_height / factor,
+                                                                            start_location[1] + field_height / factor)])
                 self._velocity: np.ndarray = np.array([uniform(-field_width, 0), uniform(-field_height, field_height)])
             elif self.swarm.scene.edge == 2:  # top
-                self._position: np.ndarray = np.array([uniform(start_location[0] - field_width/factor,
-                                                               start_location[0] + field_width/factor), 0])
+                self._position: np.ndarray = np.array([uniform(start_location[0] - field_width / factor,
+                                                               start_location[0] + field_width / factor), 0])
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width),
                                                        np.random.uniform(0, field_height)])
-            else:                             # bottom
-                self._position: np.ndarray = np.array([uniform(start_location[0] - field_width/factor,
-                                                               start_location[0] + field_width/factor), field_height])
+            else:  # bottom
+                self._position: np.ndarray = np.array([uniform(start_location[0] - field_width / factor,
+                                                               start_location[0] + field_width / factor), field_height])
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
 
+        self._velocity /= self._swarm.scene.hyperparameters.speed_scale
         self._best_score: float = field_target_function(self._position[0], self._position[1],
-                                                        (field_width/2, field_height/2))
+                                                        (field_width / 2, field_height / 2))
         self._best_position: np.ndarray = self._position
-
         self._path_length: float = 0
 
-        self.w = 1
-        self.c1 = 2
-        self.c2 = 2
-
     @property
-    def best_score(self):
+    def best_score(self) -> float:
         return self._best_score
 
     @best_score.setter
@@ -75,11 +73,7 @@ class Particle:
         self._best_score = new_score
 
     @property
-    def swarm(self):
-        return self._swarm
-
-    @property
-    def best_position(self):
+    def best_position(self) -> np.ndarray:
         return self._best_position
 
     @best_position.setter
@@ -87,19 +81,46 @@ class Particle:
         self._best_position = new_position
 
     @property
-    def position(self):
+    def position(self) -> np.ndarray:
         return self._position
 
+    @position.setter
+    def position(self, new_value: np.ndarray):
+        self._position = new_value
+        self.correct_position()
+
     @property
-    def path_length(self):
+    def path_length(self) -> float:
         return self._path_length
+
+    @path_length.setter
+    def path_length(self, new_value: float):
+        self._path_length = new_value
 
     @property
     def velocity(self):
         return self._velocity
 
-    def update(self, current_iteration: int):
+    @velocity.setter
+    def velocity(self, new_value: np.ndarray):
+        self._velocity = new_value
 
+    @property
+    def swarm(self):
+        return self._swarm
+
+    def correct_position(self):
+        if self._position[0] < 0:
+            self._position[0] = 0
+        elif self._position[0] > self._swarm.scene.field.width:
+            self._position[0] = self._swarm.scene.field.width
+
+        if self._position[1] < 0:
+            self._position[1] = 0
+        elif self._position[1] > self._swarm.scene.field.height:
+            self._position[1] = self._swarm.scene.field.height
+
+    def update(self):
         field_target_function = self.swarm.scene.field.target_function
         field_width = self.swarm.scene.field.width
         field_height = self.swarm.scene.field.height
@@ -107,26 +128,25 @@ class Particle:
         r_personal: float = np.random.uniform()
         r_global: float = np.random.uniform()
 
-        self._velocity = self.w * self._velocity + self.c1*r_personal*(self._best_position - self._position) + \
-                         self.c2*r_global*(self._swarm.best_global_position - self._position)
+        self._velocity = self.swarm.scene.hyperparameters.w * self._velocity + \
+                         self.swarm.scene.hyperparameters.c1 * r_personal * (self.best_position - self.position) + \
+                         self.swarm.scene.hyperparameters.c2 * r_global * (self.swarm.best_global_position -
+                                                                           self.position)
 
-        if current_iteration % 50 == 0:
-            self.w /= 2
+        self.position = self.velocity + self.position
 
-        self._position = self._velocity + self._position
+        self.path_length += np.linalg.norm(self.velocity)
 
-        self._path_length += np.linalg.norm(self._velocity)
-
-        current_score = field_target_function(self._position[0], self._position[1],
-                                              (field_width/2, field_height/2))
+        current_score = field_target_function(self.position[0], self.position[1],
+                                              (field_width / 2, field_height / 2))
 
         if current_score > self._best_score:
-            self._best_score = current_score
-            self._best_position = self._position
+            self.best_score = current_score
+            self.best_position = self.position
 
         if current_score > self.swarm.best_global_score:
-            self._swarm.best_global_score = current_score
-            self._swarm.best_global_position = self._position
+            self.swarm.best_global_score = current_score
+            self.swarm.best_global_position = self.position
 
 
 class Swarm:
@@ -134,7 +154,7 @@ class Swarm:
         self._n_particles = n_particles
         self._n_iterations = n_iterations
 
-        self.scene = scene
+        self._scene = scene
 
         self._best_global_score = sys.float_info.min
         self._best_global_position: list[float] | np.ndarray = [0., 0.]
@@ -143,26 +163,12 @@ class Swarm:
         for i in range(self._n_particles):
             self.particles.append(Particle(self))
 
-            if self.particles[i].best_score > self._best_global_score:
-                self._best_global_score = self.particles[i].best_score
-                self._best_global_position = self.particles[i].best_position
+            if self.particles[i].best_score > self.best_global_score:
+                self.best_global_score = self.particles[i].best_score
+                self.best_global_position = self.particles[i].best_position
 
-        if self.scene.verbose > 0:
+        if self._scene.verbose > 0:
             self.show_current_position("Начальное положение")
-
-    def show_current_position(self, title: str):
-        coordinates = []
-        for i in range(self._n_particles):
-            coordinates.append(list(self.particles[i].position))
-        coordinates = np.array(coordinates)
-
-        # plt.plot(*zip(*coordinates), marker='o', color='r', ls='', markersize=10)
-        plt.scatter(coordinates[:, 0], coordinates[:, 1], marker='o', color='r', ls='', s=20)
-        axes = plt.gca()
-        axes.set_xlim(0, self.scene.field.width)
-        axes.set_ylim(0, self.scene.field.height)
-        axes.set_title(title)
-        plt.show()
 
     @property
     def best_global_score(self):
@@ -173,53 +179,94 @@ class Swarm:
         self._best_global_score = new_value
 
     @property
-    def best_global_position(self):
+    def best_global_position(self) -> np.ndarray:
         return self._best_global_position
 
     @best_global_position.setter
-    def best_global_position(self, new_position: list[float] | np.ndarray):
+    def best_global_position(self, new_position: np.ndarray):
         self._best_global_position = new_position
+
+    @property
+    def scene(self):
+        return self._scene
+
+    def get_swarm_positions(self) -> np.ndarray:
+        positions: np.ndarray = np.empty((len(self.particles), 2), dtype=np.double)
+        for index, particle in enumerate(self.particles):
+            positions[index] = particle.position
+
+        return positions
+
+    def show_current_position(self, title: str):
+        coordinates: np.ndarray = self.get_swarm_positions()
+
+        plt.scatter(coordinates[:, 0], coordinates[:, 1], marker='o', color='r', ls='', s=20)
+        axes = plt.gca()
+        axes.set_xlim(0, self.scene.field.width)
+        axes.set_ylim(0, self.scene.field.height)
+        axes.set_title(title)
+
+        for index, label in enumerate(np.arange(len(coordinates))):
+            axes.annotate(label, (coordinates[index][0], coordinates[index][1]))
+
+        plt.show()
+
+        sleep(1)
+        plt.close(plt.gcf())
 
     def release_the_swarm(self) -> tuple[int, float, float, int]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
-        early_stopping_around_answer_count = 0
         early_stopping_around_answer = False
 
-        eps_position = 0.001
-        eps_velocity = 0.001
+        eps_position = 0.0001
+        eps_velocity = 0.0001
 
         ratio = 0.75
 
         for i in range(1, self._n_iterations + 1):
-            for j in range(len(self.particles)):
-                self.particles[j].update(i)
-            for j in range(len(self.particles)):
-                if np.linalg.norm(self.particles[j].position - self.scene.answer.position) < eps_position:
-                    early_stopping_around_answer_count += 1
+            for j in range(self._n_particles):
+                self.particles[j].update()
+
+            for j in range(self._n_particles):
+                early_stopping_around_answer_count = 0
+                for k in range(self._n_particles):
+                    if np.linalg.norm(self.particles[j].position - self.particles[k].position) < eps_position:
+                        early_stopping_around_answer_count += 1
+
+                if early_stopping_around_answer_count > ratio * self._n_particles:
+                    early_stopping_around_answer = True
+                    break
                 if np.linalg.norm(self.particles[j].velocity) < eps_velocity:
                     early_stopping_small_velocity_count += 1
 
-            if early_stopping_around_answer_count > ratio * self._n_particles:
-                early_stopping_around_answer = True
+            if early_stopping_around_answer:
                 break
+
             elif early_stopping_small_velocity_count > ratio * self._n_particles:
                 early_stopping_small_velocity = True
                 break
 
-            if i % 100 == 0:
+            for j in range(self._n_particles):
+                print(self.particles[j].velocity)
+
+            if i % 1 == 0:
                 if self.scene.verbose > 1:
                     self.show_current_position(str(i))
+                    # os.system('clear')
 
-            early_stopping_around_answer_count = 0
             early_stopping_small_velocity_count = 0
+
+            self.scene.inertia_scheduler.step()
 
         total_path_length: float = 0
         for j in range(self._n_particles):
             total_path_length += self.particles[j].path_length
 
-        result = [i, self.best_global_score, total_path_length]
+        result = [i, self.scene.answer.value - self.best_global_score,
+                  (self.scene.answer.value - self.best_global_score) / self.scene.answer.value, total_path_length,
+                  total_path_length/self._n_particles]
 
         if early_stopping_around_answer:
             result = result + [1]
@@ -227,5 +274,7 @@ class Swarm:
             result = result + [2]
         else:
             result = result + [0]
+
+        self.show_current_position("Последняя итерация")
 
         return tuple(result)
