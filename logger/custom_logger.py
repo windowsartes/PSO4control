@@ -7,5 +7,5 @@ class CustomLogger:
 
     def write(self, content: list[tp.Any], mode: str):
         with open(self._path_to_file, mode) as logs:
-            row = ", ".join([str(elem) for elem in content])
+            row = ",".join([str(elem) for elem in content])
             logs.write(row + "\n")
