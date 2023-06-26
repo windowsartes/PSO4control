@@ -2,10 +2,13 @@ import sys
 from time import sleep
 import os
 import typing as tp
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.patches as mpatches
 from numpy.random import uniform
+import matplotlib
 
 from abc import ABC, abstractmethod
 
@@ -251,6 +254,9 @@ class SwarmBase(SwarmInterface):
 
         self._particles: list[ParticleBase] = []
 
+        if self._scene.verbose > 0:
+            self.scene.field.compute_and_save_field()
+
     def update_global_information(self):
         for particle in self._particles:
             if self._best_global_score < particle.best_score:
@@ -258,10 +264,8 @@ class SwarmBase(SwarmInterface):
                 self._best_global_position = particle.best_position
 
     def get_swarm_positions(self) -> np.ndarray:
-        print("in method")
         positions: np.ndarray = np.empty((self._n_particles, 2), dtype=np.double)
         for index, particle in enumerate(self._particles):
-            print(particle.position)
             positions[index] = particle.position
 
         return positions
@@ -280,6 +284,8 @@ class SwarmCentralized(SwarmBase):
             self._particles.append(ParticleCentralized(self))
 
         self.update_global_information()
+
+        plt.ion()
 
         if self._scene.verbose > 0:
             self.show_current_position("Начальное положение")
@@ -306,36 +312,54 @@ class SwarmCentralized(SwarmBase):
         self._best_global_position = new_position
 
     def show_current_position(self, title: str):
+        correctness_scale = 100
+
         coordinates: np.ndarray = self.get_swarm_positions()
 
-        plt.scatter(coordinates[:, 0], coordinates[:, 1], marker='o', color='r', ls='', s=20)
-        axes = plt.gca()
-        axes.set_xlim(0, self.scene.field.width)
-        axes.set_ylim(0, self.scene.field.height)
-        axes.set_title(title)
+        figure = pickle.load(open("./stored_field/field.pickle", "rb"))
+        ax = plt.gca()
+
+        x, y = 100, 100
+
+        backend = matplotlib.get_backend()
+        if backend == 'TkAgg':
+            figure.canvas.manager.window.wm_geometry(f"+{x}+{y}")
+        elif backend == 'WXAgg':
+            figure.canvas.manager.window.SetPosition((x, y))
+        else:
+            # This works for QT and GTK
+            # You can also use window.setGeometry
+            figure.canvas.manager.window.move(x, y)
+
+        ax.scatter(coordinates[:, 0] * correctness_scale, coordinates[:, 1] * correctness_scale,
+                   marker='o', color='b', ls='', s=20)
+
+        ax.set_xlim(0, self.scene.field.width * correctness_scale)
+        ax.set_ylim(0, self.scene.field.height * correctness_scale)
+        ax.set_title(title)
 
         for index, label in enumerate(np.arange(len(coordinates))):
-            axes.annotate(label, (coordinates[index][0], coordinates[index][1]))
+            ax.annotate(label, (coordinates[index][0] * correctness_scale,
+                                coordinates[index][1] * correctness_scale), fontsize=10)
 
-        plt.show()
+        plt.draw()
+        plt.gcf().canvas.flush_events()
 
-        sleep(1)
-        plt.close(plt.gcf())
+        plt.pause(2.)
+        plt.close(figure)
 
     def release_the_swarm(self) -> tuple[int, float, float, int]:
-        # print("a")
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
         early_stopping_around_answer = False
 
-        eps_position = 0.0001
+        eps_position = 0.001
         eps_velocity = 0.0001
 
         ratio = 0.75
 
         for i in range(1, self._n_iterations + 1):
-            # print("b")
             for j in range(self._n_particles):
                 self._particles[j].update()
 
@@ -360,7 +384,7 @@ class SwarmCentralized(SwarmBase):
                 early_stopping_small_velocity = True
                 break
 
-            if i % 1 == 0:
+            if i % 10 == 0:
                 if self.scene.verbose > 1:
                     self.show_current_position(str(i))
                     # os.system('clear')
@@ -409,25 +433,46 @@ class SwarmDecentralized(SwarmBase):
             self.show_current_position("Начальное положение")
 
     def show_current_position(self, title: str):
+        correctness_scale = 100
+
         coordinates: np.ndarray = self.get_swarm_positions()
 
-        plt.scatter(coordinates[:, 0], coordinates[:, 1], marker='o', color='r', ls='', s=20)
-        axes = plt.gca()
-        axes.set_xlim(0, self.scene.field.width)
-        axes.set_ylim(0, self.scene.field.height)
-        axes.set_title(title)
+        figure = pickle.load(open("./stored_field/field.pickle", "rb"))
+        ax = plt.gca()
+
+        x, y = 100, 100
+
+        backend = matplotlib.get_backend()
+        if backend == 'TkAgg':
+            figure.canvas.manager.window.wm_geometry(f"+{x}+{y}")
+        elif backend == 'WXAgg':
+            figure.canvas.manager.window.SetPosition((x, y))
+        else:
+            # This works for QT and GTK
+            # You can also use window.setGeometry
+            figure.canvas.manager.window.move(x, y)
+
+        ax.scatter(coordinates[:, 0]*correctness_scale, coordinates[:, 1]*correctness_scale,
+                   marker='o', color='b', ls='', s=20)
+
+        ax.set_xlim(0, self.scene.field.width*correctness_scale)
+        ax.set_ylim(0, self.scene.field.height*correctness_scale)
+        ax.set_title(title)
 
         for index, label in enumerate(np.arange(len(coordinates))):
-            axes.annotate(label, (coordinates[index][0], coordinates[index][1]))
+            ax.annotate(label, (coordinates[index][0]*correctness_scale,
+                                coordinates[index][1]*correctness_scale), fontsize=10)
 
         for coordinate in coordinates:
-            circle = plt.Circle(coordinate, self.connection_radius, color="g", fill=False, linestyle="--")
-            axes.add_patch(circle)
+            circle = mpatches.Circle(coordinate*correctness_scale, self.connection_radius*correctness_scale,
+                                     color="g", fill=False, linestyle="--")
+            ax.add_patch(circle)
 
-        # plt.show()
+        plt.draw()
+        plt.gcf().canvas.flush_events()
 
-        plt.pause(0.1)
-        plt.clf()
+        plt.pause(2.)
+        plt.close(figure)
 
     def _get_best_global_score(self, update=True) -> float:
         if update:
@@ -480,7 +525,7 @@ class SwarmDecentralized(SwarmBase):
                 early_stopping_small_velocity = True
                 break
 
-            if i % 1 == 0:
+            if i % 10 == 0:
                 if self._scene.verbose > 1:
                     self.show_current_position(str(i))
                     # os.system('clear')
