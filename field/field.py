@@ -1,4 +1,5 @@
 import typing as tp
+import pickle
 
 import numpy as np
 import seaborn as sns
@@ -55,7 +56,26 @@ class Field:
 
         plt.show()
 
+    def compute_and_save_field(self):
+        x_values: np.ndarray = np.linspace(0, self.width, 1000)
+        y_values: np.ndarray = np.linspace(0, self.height, 1000)
+
+        centre: tuple[float, float] = (self.width / 2, self.height / 2)
+
+        x_grid, y_grid = np.meshgrid(x_values, y_values)
+
+        coordinates = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
+
+        values = np.array([self.target_function(x, y, centre) for x, y in coordinates])
+        values = values.reshape((len(x_values), len(y_values)))
+        sns.heatmap(values, cmap=cm["hot"])
+        plt.axis('off')
+
+        ax = plt.gca()
+        pickle.dump(ax, open("./stored_field/field.pickle", "wb"))
+
 
 if __name__ == "__main__":
     field = Field(10, 10, gaussian)
+    field.compute_and_save_field()
     field.show()
