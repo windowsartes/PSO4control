@@ -57,6 +57,8 @@ class Field:
         plt.show()
 
     def compute_and_save_field(self):
+        fig, ax = plt.subplots()
+
         x_values: np.ndarray = np.linspace(0, self.width, 1000)
         y_values: np.ndarray = np.linspace(0, self.height, 1000)
 
@@ -71,11 +73,12 @@ class Field:
         sns.heatmap(values, cmap=cm["hot"])
         plt.axis('off')
 
-        ax = plt.gca()
-        pickle.dump(ax, open("./stored_field/field.pickle", "wb"))
+        pickle.dump(fig, open("./stored_field/field.pickle", "wb"))
+
+        plt.close()
 
 
 if __name__ == "__main__":
     field = Field(10, 10, gaussian)
-    field.compute_and_save_field()
+    # field.compute_and_save_field()
     field.show()
