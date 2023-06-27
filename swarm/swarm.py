@@ -59,7 +59,6 @@ class ParticleBase(ParticleInterface):
     def __init__(self, swarm: "Swarm"):
         self._swarm: 'Swarm' = swarm
 
-        field_target_function = self._swarm.scene.field.target_function
         field_width: float = self._swarm.scene.field.width
         field_height: float = self._swarm.scene.field.height
 
@@ -104,8 +103,8 @@ class ParticleBase(ParticleInterface):
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
 
         self._velocity /= self._swarm.scene.hyperparameters.velocity_scale
-        self._best_score: float = field_target_function(self._position[0], self._position[1],
-                                                        (field_width / 2, field_height / 2))
+        self._best_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1],
+                                                                          (field_width / 2, field_height / 2))
         self._best_position: np.ndarray = self._position
 
         self._path_length: float = 0
@@ -152,10 +151,6 @@ class ParticleCentralized(ParticleBase):
         super().__init__(swarm)
 
     def update(self):
-        field_target_function = self._swarm.scene.field.target_function
-        field_width = self._swarm.scene.field.width
-        field_height = self._swarm.scene.field.height
-
         r_personal: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_scale
         r_global: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_scale
 
@@ -168,8 +163,7 @@ class ParticleCentralized(ParticleBase):
 
         self._path_length += np.linalg.norm(self._velocity)
 
-        current_score = field_target_function(self._position[0], self._position[1],
-                                              (field_width / 2, field_height / 2))
+        current_score = self._swarm.scene.field.target_function(self._position[0], self._position[1])
 
         if current_score > self._best_score:
             self._best_score = current_score
@@ -190,10 +184,6 @@ class ParticleDecentralized(ParticleBase):
         self._best_global_position: np.ndarray = self._best_position
 
     def update(self):
-        field_target_function = self._swarm.scene.field.target_function
-        field_width = self._swarm.scene.field.width
-        field_height = self._swarm.scene.field.height
-
         r_personal: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_scale
         r_global: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_scale
 
@@ -205,15 +195,14 @@ class ParticleDecentralized(ParticleBase):
 
         self._path_length += np.linalg.norm(self._velocity)
 
-        current_score: float = field_target_function(self._position[0], self._position[1],
-                                                     (field_width / 2, field_height / 2))
+        current_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1])
 
         if current_score > self._best_score:
             self._best_score = current_score
             self._best_position = self._position
 
     def update_my_global_information(self):
-        for particle in self._swarm._particles:
+        for particle in self._swarm.particles:
             if np.linalg.norm(self.position - particle.position) < self._swarm.connection_radius:
                 if self._best_global_score < particle.best_score:
                     self._best_global_score = particle.best_score
@@ -274,6 +263,10 @@ class SwarmBase(SwarmInterface):
     @property
     def scene(self):
         return self._scene
+
+    @property
+    def particles(self):
+        return self._particles
 
 
 class SwarmCentralized(SwarmBase):
@@ -356,7 +349,7 @@ class SwarmCentralized(SwarmBase):
         early_stopping_around_answer = False
 
         eps_position = 0.001
-        eps_velocity = 0.0001
+        eps_velocity = 0.001
 
         ratio = 0.75
 
