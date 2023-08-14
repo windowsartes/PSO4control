@@ -1,4 +1,5 @@
 import typing as tp
+import json
 from dataclasses import dataclass
 
 import numpy as np
@@ -7,7 +8,8 @@ from numpy.random import uniform
 from field import field as fl
 from logger import custom_logger
 from swarm import swarm as sw
-from swarm import swarm_dec as swd
+
+from gradient_methods import gradient_methods
 
 
 class InertiaScheduler:
@@ -21,7 +23,6 @@ class InertiaScheduler:
         self._steps += 1
         if self._steps % self._step_size == 0:
             self._scene.hyperparameters.w *= self._gamma
-            # print("w = ", self._scene.hyperparameters.w)
 
 
 @dataclass
@@ -47,6 +48,11 @@ class Hyperparameters:
     _inertia_scheduler_step_size: int
     _inertia_scheduler_gamma: float
     _connect_radius: float = float("inf")
+    _noise_scale: float = 0.001425
+
+    @property
+    def noise_scale(self):
+        return self._noise_scale
 
     @property
     def w(self) -> float:
@@ -76,10 +82,6 @@ class Hyperparameters:
     def velocity_scale(self) -> float:
         return self._velocity_scale
 
-    #@speed_scale.setter
-    #def speed_scale(self, new_value):
-    #    self._speed_scale = new_value
-
     @property
     def inertia_scheduler_step_size(self) -> int:
         return self._inertia_scheduler_step_size
@@ -106,11 +108,11 @@ class Scene:
                  # answer_value: float, answer_location: np.ndarray,
                  verbose: int,
                  answer: Answer,
-                 field: fl.Field,
+                 field: fl.GaussianField,
                  hyperparameters: Hyperparameters,
                  swarm_type: str = "centralized"):
         self.answer: Answer = answer
-        self.field: fl.Field = field
+        self.field: fl.FieldInterface = field
         self.hyperparameters: Hyperparameters = hyperparameters
         self.verbose: int = verbose
         self.spawn_type: str = spawn_type
@@ -144,7 +146,10 @@ class Scene:
             self.swarm: sw.SwarmBase = sw.SwarmCentralized(swarm_n_particles, swarm_n_iterations, self)
         elif swarm_type == "decentralized":
             self.swarm: sw.SwarmBase = sw.SwarmDecentralized(swarm_n_particles, swarm_n_iterations,
-                                              self.hyperparameters._connect_radius, self)
+                                                             self.hyperparameters._connect_radius, self)
+        elif swarm_type == "corrupted":
+            self.swarm: sw.SwarmCorrupted = sw.SwarmCorrupted(swarm_n_particles, swarm_n_iterations,
+                                                              self.hyperparameters._connect_radius, self)
 
     def run(self) -> tuple[int, float, float, int]:
         # print(self.swarm.best_global_score)
@@ -154,51 +159,98 @@ class Scene:
         return results
 
 
+class SceneGrad:
+    def __init__(self, n_iterations, answer: Answer,
+                 field: fl.GaussianField, verbose):
+        self.answer = answer
+        self.field = field
+        self.verbose = verbose
+
+        self.solver = gradient_methods.GradientLift(self, n_iterations)
+
+    def run(self):
+        results = self.solver.run()
+        return results
+
+
 if __name__ == "__main__":
+    json_config = """
+    {
+    "field":
+        {
+        "target_function": "gaussian",
+        "height": 10,
+        "width": 10,
+        "correctness_scale": 100
+         },
+    "answer": [5, 5],
+    "solver":
+        {
+        "type": "decentralized",
+        "spawn_type": "small_area",
+        "n_iterations": 1000,
+        "n_particles": 10,
+        "hyperparams":
+            {
+            "coefficients":
+                {
+                "w": 1,
+                "c1": 2,
+                "c2": 2
+                },
+            "inertia_scheduler":
+                {
+                "gamma": 0.75,
+                "step_size": 100
+                }    
+            },
+            "early_stopping":
+                {
+                "around_point": 
+                    {
+                    "epsilon": 0.0001,
+                    "ratio": 0.75
+                    },
+                "velocity":
+                    {
+                    "epsilon: 0.0001,
+                    "ratio": 0.75
+                    }
+                },
+            }
+            "connection_radius": 0.1,
+            "velocity_factor": 50,
+        },
+    "verbose": 2,    
     """
-    height: float = 10.
-    width: float = 10.
 
-    n_iterations: int = 1000
-
-    verbose: int = 0
-
-    answer = Answer(fl.gaussian(height/2, width/2, (height/2, width/2)), np.array([height/2, width/2]))
-    field = fl.Field(height, width, fl.gaussian)
-
-    for r in [0.01, 0.005]:
-        for spawn_type in ["edges", "small_area"]:
-            for n_particles in [2, 3, 4, 5, 10, 15, 20]:
-
-                my_logger = custom_logger.CustomLogger("./logs/decentralized/" + "r_" + str(r) + "/"
-                                                       + spawn_type + "_" + str(n_particles) + ".csv")
-
-                columns = ["n_iterations", "absolute_error", "relative_error", "total_path", "average_path",
-                           "exit_code", "spawn_type"]
-
-                my_logger.write(columns, "w")
-
-                for i in range(1000):
-                    hyperparams = Hyperparameters(_w=1, _c1=2, _c2=2, _speed_scale=50,
-                                                  _inertia_scheduler_step_size=100, _inertia_scheduler_gamma=0.75,
-                                                  _connect_radius=height*r)
-
-                    # my_scene = Scene(n_particles, 1000, spawn_type, verbose, answer, field, hyperparams)
-                    my_scene = Scene(n_particles, n_iterations, spawn_type, verbose, answer, field, hyperparams,
-                                     "decentralized")
-                    results = list(my_scene.run())
-                    results = results + [spawn_type]
-                    my_logger.write(results, "a")
-    """
     height = 10.
     width = 10.
 
     answer = Answer(fl.gaussian(height/2, width/2, (height/2, width/2)), np.array([height/2, width/2]))
-    field = fl.Field(height, width, fl.gaussian)
+    field = fl.GaussianField(height, width, fl.gaussian, fl.gaussian_symbolic)
     hyperparams = Hyperparameters(_w=1, _c1=2, _c2=2, _velocity_scale=50,
                                   _inertia_scheduler_step_size=100, _inertia_scheduler_gamma=0.75,
-                                  _connect_radius=0.5)
+                                  _connect_radius=height*0.1)
 
-    my_scene = Scene(20, 1000, "edges", 2, answer, field, hyperparams, "decentralized")
+    my_scene = Scene(20, 1000, "small_area", 2, answer, field, hyperparams, "centralized")
     _ = my_scene.run()
     print(_)
+
+    """
+    height = 10.
+    width = 10.
+
+    answer = Answer(fl.gaussian(height / 2, width / 2), np.array([height / 2, width / 2]))
+    field = fl.Field(height, width, fl.gaussian)
+
+    my_logger = custom_logger.CustomLogger("./logs/gradient/gradient_lift.csv")
+    # columns = ["n_iterations", "absolute_error", "relative_error", "total_path"]
+    # my_logger.write(columns, "w")
+
+    for i in range(1000-943):
+        my_scene = SceneGrad(3000, answer, field, 0)
+        results = list(my_scene.run())
+        results = results
+        my_logger.write(results, "a")
+    """

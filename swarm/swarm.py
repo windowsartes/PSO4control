@@ -83,8 +83,8 @@ class ParticleInterface(ABC):
 
 
 class ParticleBase(ParticleInterface):
-    def __init__(self, swarm: "Swarm"):
-        self._swarm: 'Swarm' = swarm
+    def __init__(self, swarm: 'SwarmBase'):
+        self._swarm: 'SwarmBase' = swarm
 
         field_width: float = self._swarm.scene.field.width
         field_height: float = self._swarm.scene.field.height
@@ -196,12 +196,12 @@ class ParticleCentralized(ParticleBase):
             self._best_position = self._position
 
         if current_score > self._swarm.best_global_score:
-             self._swarm.best_global_score = current_score
-             self._swarm.best_global_position = self._position
+            self._swarm.best_global_score = current_score
+            self._swarm.best_global_position = self._position
 
 
 class ParticleDecentralizedBase(ParticleBase):
-    def __init__(self, swarm):
+    def __init__(self, swarm: 'SwarmDecentralizedBase'):
         super().__init__(swarm)
 
         self._best_global_score: float = float("-inf")
@@ -220,6 +220,12 @@ class ParticleDecentralizedBase(ParticleBase):
         self._path_length += np.linalg.norm(self._velocity)
 
     def update_my_global_information(self):
+        """
+        This method is used when decentralized particle want's to update its global information: best found score ant
+        its position. Note that only particle, that located close enough to target particle can share information;
+
+        Returns: Nothing
+        """
         for particle in self._swarm.particles:
             if np.linalg.norm(self.position - particle.position) < self._swarm.connection_radius:
                 if self._best_global_score < particle.best_score:
@@ -241,7 +247,7 @@ class ParticleDecentralized(ParticleDecentralizedBase):
 
 
 class ParticleCorrupted(ParticleDecentralizedBase):
-    def __init__(self, swarm: "SwarmCorrupted"):
+    def __init__(self, swarm: 'SwarmCorrupted'):
         super().__init__(swarm)
 
         scale = self._swarm.scene.hyperparameters.noise_scale
@@ -249,6 +255,8 @@ class ParticleCorrupted(ParticleDecentralizedBase):
                                     np.linalg.norm(self._position - self._swarm.scene.answer.position)) * scale
 
     def update(self):
+        super().update()
+
         scale = self._swarm.scene.hyperparameters.noise_scale
         current_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1]) + \
                                uniform(-np.linalg.norm(self._position - self._swarm.scene.answer.position),
@@ -389,7 +397,7 @@ class SwarmCentralized(SwarmBase):
         plt.draw()
         plt.gcf().canvas.flush_events()
 
-        plt.pause(20.)
+        plt.pause(2.)
         plt.close(figure)
 
     def release_the_swarm(self) -> tuple[int, float, float, int]:
@@ -430,8 +438,7 @@ class SwarmCentralized(SwarmBase):
 
             if i % 10 == 0:
                 if self.scene.verbose > 1:
-                    self.show_current_position(str(i))
-                    # os.system('clear')
+                    self.show_current_position(f"Итерация №{i}")
 
             early_stopping_small_velocity_count = 0
 
@@ -458,22 +465,11 @@ class SwarmCentralized(SwarmBase):
         return tuple(result)
 
 
-class SwarmDecentralized(SwarmBase):
+class SwarmDecentralizedBase(SwarmBase):
     def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):
         super().__init__(n_particles, n_iterations, scene)
 
         self.connection_radius = connection_radius
-
-        self._particles: list[ParticleDecentralized] = []
-        for i in range(self._n_particles):
-            self._particles.append(ParticleDecentralized(self))
-
-        self.update_global_information()
-
-        plt.ion()
-
-        if self._scene.verbose > 0:
-            self.show_current_position("Начальное положение")
 
     def show_current_position(self, title: str):
         correctness_scale = 100
@@ -517,19 +513,35 @@ class SwarmDecentralized(SwarmBase):
         plt.pause(2.)
         plt.close(figure)
 
-    def _get_best_global_score(self, update=True) -> float:
+    def get_best_global_score(self, update=True) -> float:
         if update:
             self.update_global_information()
 
         return self._best_global_score
 
-    def _get_best_global_position(self, update=True) -> np.ndarray:
+    def get_best_global_position(self, update=True) -> np.ndarray:
         if update:
             self.update_global_information()
 
         return self._best_global_position
 
-    def release_the_swarm(self) -> tuple[int, float, float, int]:
+
+class SwarmDecentralized(SwarmDecentralizedBase):
+    def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):
+        super().__init__(n_particles, n_iterations, connection_radius, scene)
+
+        self._particles: list[ParticleDecentralized] = []
+        for i in range(self._n_particles):
+            self._particles.append(ParticleDecentralized(self))
+
+        self.update_global_information()
+
+        plt.ion()
+
+        if self._scene.verbose > 0:
+            self.show_current_position("Начальное положение")
+
+    def release_the_swarm(self) -> tuple[int, float, float, float, float, int]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
@@ -563,7 +575,6 @@ class SwarmDecentralized(SwarmBase):
 
             if early_stopping_around_answer:
                 break
-
             elif early_stopping_small_velocity_count > ratio * self._n_particles:
                 early_stopping_small_velocity = True
                 break
@@ -571,7 +582,6 @@ class SwarmDecentralized(SwarmBase):
             if i % 10 == 0:
                 if self._scene.verbose > 1:
                     self.show_current_position(str(i))
-                    # os.system('clear')
 
             early_stopping_small_velocity_count = 0
 
@@ -582,8 +592,8 @@ class SwarmDecentralized(SwarmBase):
             total_path_length += self._particles[j].path_length
 
         result = [i,
-                  self._scene.answer.value - self._get_best_global_score(),
-                  (self._scene.answer.value - self._get_best_global_score(False)) / self._scene.answer.value,
+                  self._scene.answer.value - self.get_best_global_score(),
+                  (self._scene.answer.value - self.get_best_global_score(False)) / self._scene.answer.value,
                   total_path_length,
                   total_path_length/self._n_particles]
 
@@ -595,12 +605,12 @@ class SwarmDecentralized(SwarmBase):
             result = result + [0]
 
         if self._scene.verbose > 0:
-            self.show_current_position("Последняя итерация")
+            self.show_current_position(f"Итерация №{i}")
 
         return tuple(result)
 
 
-class SwarmCorrupted(SwarmDecentralized):
+class SwarmCorrupted(SwarmDecentralizedBase):
     def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):
         super().__init__(n_particles, n_iterations, connection_radius, scene)
 
@@ -617,19 +627,13 @@ class SwarmCorrupted(SwarmDecentralized):
         if self._scene.verbose > 0:
             self.show_current_position("Начальное положение")
 
-    def _get_best_global_score(self, update=True) -> float:
-        if update:
-            self.update_global_information()
-
-        return self._best_global_score
-
     def update_global_information(self):
         for particle in self._particles:
             if self._best_global_score < self.scene.field.target_function(*particle.best_position):
                 self._best_global_score = self.scene.field.target_function(*particle.best_position)
                 self._best_global_position = particle.best_position
 
-    def release_the_swarm(self) -> tuple[int, float, float, int]:
+    def release_the_swarm(self) -> tuple[int, float, float, float, float, int]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
@@ -670,7 +674,7 @@ class SwarmCorrupted(SwarmDecentralized):
 
             if i % 10 == 0:
                 if self._scene.verbose > 1:
-                    self.show_current_position(str(i))
+                    self.show_current_position(f"Итерация №{i}")
 
             early_stopping_small_velocity_count = 0
 
@@ -681,8 +685,8 @@ class SwarmCorrupted(SwarmDecentralized):
             total_path_length += self._particles[j].path_length
 
         result = [i,
-                  self._scene.answer.value - self._get_best_global_score(),
-                  (self._scene.answer.value - self._get_best_global_score(False)) / self._scene.answer.value,
+                  self._scene.answer.value - self.get_best_global_score(),
+                  (self._scene.answer.value - self.get_best_global_score(False)) / self._scene.answer.value,
                   total_path_length,
                   total_path_length/self._n_particles]
 
