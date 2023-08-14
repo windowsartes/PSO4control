@@ -22,26 +22,53 @@ class ParticleInterface(ABC):
 
     @abstractmethod
     def update(self):
+        """
+        One of the most import methods to implement; Used for update particle's position and velocity attributes;
+
+        Returns: Nothing;
+        """
         pass
 
     @property
     @abstractmethod
     def best_score(self):
+        """
+        Returns best score that particle has achieved during training;
+
+        Returns: particle's best score;
+        """
         pass
 
     @property
     @abstractmethod
     def best_position(self):
+        """
+        Returns best position that particle has found during training;
+
+        Returns: particle's best found position;
+        """
         pass
 
     @property
     @abstractmethod
     def position(self):
+        """
+        Returns particles current position;
+
+        Returns: particle's current position as a np.ndarray;
+        """
         pass
 
     @position.setter
     @abstractmethod
     def position(self, new_position: np.ndarray):
+        """
+        A positions setter; using it, you can properly change particle's position outside the class;
+        Args:
+            new_position: new particle's position as a nd.ndarray;
+
+        Returns: Nothing;
+        """
         pass
 
     @property
@@ -103,8 +130,7 @@ class ParticleBase(ParticleInterface):
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
 
         self._velocity /= self._swarm.scene.hyperparameters.velocity_scale
-        self._best_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1],
-                                                                          (field_width / 2, field_height / 2))
+        self._best_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1])
         self._best_position: np.ndarray = self._position
 
         self._path_length: float = 0
@@ -169,15 +195,13 @@ class ParticleCentralized(ParticleBase):
             self._best_score = current_score
             self._best_position = self._position
 
-        # self._swarm.get_information_from_particle(self)
-
         if current_score > self._swarm.best_global_score:
              self._swarm.best_global_score = current_score
              self._swarm.best_global_position = self._position
 
 
-class ParticleDecentralized(ParticleBase):
-    def __init__(self, swarm: 'SwarmDecentralized'):
+class ParticleDecentralizedBase(ParticleBase):
+    def __init__(self, swarm):
         super().__init__(swarm)
 
         self._best_global_score: float = float("-inf")
@@ -195,12 +219,6 @@ class ParticleDecentralized(ParticleBase):
 
         self._path_length += np.linalg.norm(self._velocity)
 
-        current_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1])
-
-        if current_score > self._best_score:
-            self._best_score = current_score
-            self._best_position = self._position
-
     def update_my_global_information(self):
         for particle in self._swarm.particles:
             if np.linalg.norm(self.position - particle.position) < self._swarm.connection_radius:
@@ -209,9 +227,41 @@ class ParticleDecentralized(ParticleBase):
                     self._best_global_position = particle.best_position
 
 
+class ParticleDecentralized(ParticleDecentralizedBase):
+    def __init__(self, swarm: 'SwarmDecentralized'):
+        super().__init__(swarm)
+
+    def update(self):
+        super().update()
+
+        current_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1])
+        if current_score > self._best_score:
+            self._best_score = current_score
+            self._best_position = self._position
+
+
+class ParticleCorrupted(ParticleDecentralizedBase):
+    def __init__(self, swarm: "SwarmCorrupted"):
+        super().__init__(swarm)
+
+        scale = self._swarm.scene.hyperparameters.noise_scale
+        self._best_score += uniform(-np.linalg.norm(self._position - self._swarm.scene.answer.position),
+                                    np.linalg.norm(self._position - self._swarm.scene.answer.position)) * scale
+
+    def update(self):
+        scale = self._swarm.scene.hyperparameters.noise_scale
+        current_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1]) + \
+                               uniform(-np.linalg.norm(self._position - self._swarm.scene.answer.position),
+                                       np.linalg.norm(self._position - self._swarm.scene.answer.position)) * scale
+
+        if current_score > self._best_score:
+            self._best_score = current_score
+            self._best_position = self._position
+
+
 class SwarmInterface(ABC):
     @abstractmethod
-    def __init__(self, n_particles: int, n_iterations: int, scene):
+    def __init__(self, n_particles: int, n_iterations: int, scene) -> None:
         pass
 
     @abstractmethod
@@ -219,7 +269,7 @@ class SwarmInterface(ABC):
         pass
 
     @abstractmethod
-    def show_current_position(self, title: str):
+    def show_current_position(self, title: str) -> None:
         pass
 
     @abstractmethod
@@ -326,7 +376,7 @@ class SwarmCentralized(SwarmBase):
             figure.canvas.manager.window.move(x, y)
 
         ax.scatter(coordinates[:, 0] * correctness_scale, coordinates[:, 1] * correctness_scale,
-                   marker='o', color='b', ls='', s=20)
+                   marker='o', color='b', ls='', s=40)
 
         ax.set_xlim(0, self.scene.field.width * correctness_scale)
         ax.set_ylim(0, self.scene.field.height * correctness_scale)
@@ -339,7 +389,7 @@ class SwarmCentralized(SwarmBase):
         plt.draw()
         plt.gcf().canvas.flush_events()
 
-        plt.pause(2.)
+        plt.pause(20.)
         plt.close(figure)
 
     def release_the_swarm(self) -> tuple[int, float, float, int]:
@@ -348,8 +398,8 @@ class SwarmCentralized(SwarmBase):
 
         early_stopping_around_answer = False
 
-        eps_position = 0.001
-        eps_velocity = 0.001
+        eps_position = 0.0001
+        eps_velocity = 0.0001
 
         ratio = 0.75
 
@@ -414,7 +464,6 @@ class SwarmDecentralized(SwarmBase):
 
         self.connection_radius = connection_radius
 
-        # self._particles: list[ParticleDecentralized] = []
         self._particles: list[ParticleDecentralized] = []
         for i in range(self._n_particles):
             self._particles.append(ParticleDecentralized(self))
@@ -486,8 +535,8 @@ class SwarmDecentralized(SwarmBase):
 
         early_stopping_around_answer = False
 
-        eps_position = 0.001
-        eps_velocity = 0.001
+        eps_position = 0.0001
+        eps_velocity = 0.0001
 
         ratio = 0.75
 
@@ -523,6 +572,105 @@ class SwarmDecentralized(SwarmBase):
                 if self._scene.verbose > 1:
                     self.show_current_position(str(i))
                     # os.system('clear')
+
+            early_stopping_small_velocity_count = 0
+
+            self._scene.inertia_scheduler.step()
+
+        total_path_length: float = 0
+        for j in range(self._n_particles):
+            total_path_length += self._particles[j].path_length
+
+        result = [i,
+                  self._scene.answer.value - self._get_best_global_score(),
+                  (self._scene.answer.value - self._get_best_global_score(False)) / self._scene.answer.value,
+                  total_path_length,
+                  total_path_length/self._n_particles]
+
+        if early_stopping_around_answer:
+            result = result + [1]
+        elif early_stopping_small_velocity:
+            result = result + [2]
+        else:
+            result = result + [0]
+
+        if self._scene.verbose > 0:
+            self.show_current_position("Последняя итерация")
+
+        return tuple(result)
+
+
+class SwarmCorrupted(SwarmDecentralized):
+    def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):
+        super().__init__(n_particles, n_iterations, connection_radius, scene)
+
+        self.connection_radius = connection_radius
+
+        self._particles: list[ParticleCorrupted] = []
+        for i in range(self._n_particles):
+            self._particles.append(ParticleCorrupted(self))
+
+        self.update_global_information()
+
+        plt.ion()
+
+        if self._scene.verbose > 0:
+            self.show_current_position("Начальное положение")
+
+    def _get_best_global_score(self, update=True) -> float:
+        if update:
+            self.update_global_information()
+
+        return self._best_global_score
+
+    def update_global_information(self):
+        for particle in self._particles:
+            if self._best_global_score < self.scene.field.target_function(*particle.best_position):
+                self._best_global_score = self.scene.field.target_function(*particle.best_position)
+                self._best_global_position = particle.best_position
+
+    def release_the_swarm(self) -> tuple[int, float, float, int]:
+        early_stopping_small_velocity_count = 0
+        early_stopping_small_velocity = False
+
+        early_stopping_around_answer = False
+
+        eps_position = 0.0001
+        eps_velocity = 0.0001
+
+        ratio = 0.75
+
+        for i in range(1, self._n_iterations + 1):
+            for j in range(self._n_particles):
+                self._particles[j].update()
+
+            for j in range(self._n_particles):
+                self._particles[j].update_my_global_information()
+
+            for j in range(ceil(ratio*self._n_particles)):
+                early_stopping_around_answer_count = 0
+                for k in range(self._n_particles):
+                    if np.linalg.norm(self._particles[j].position - self._particles[k].position) < eps_position:
+                        early_stopping_around_answer_count += 1
+
+                if early_stopping_around_answer_count > ratio * self._n_particles:
+                    early_stopping_around_answer = True
+                    break
+
+            for j in range(self._n_particles):
+                if np.linalg.norm(self._particles[j].velocity) < eps_velocity:
+                    early_stopping_small_velocity_count += 1
+
+            if early_stopping_around_answer:
+                break
+
+            elif early_stopping_small_velocity_count > ratio * self._n_particles:
+                early_stopping_small_velocity = True
+                break
+
+            if i % 10 == 0:
+                if self._scene.verbose > 1:
+                    self.show_current_position(str(i))
 
             early_stopping_small_velocity_count = 0
 
