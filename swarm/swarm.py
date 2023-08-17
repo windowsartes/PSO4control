@@ -203,6 +203,7 @@ class ParticleCentralized(ParticleBase):
 class ParticleDecentralizedBase(ParticleBase):
     def __init__(self, swarm: 'SwarmDecentralizedBase'):
         super().__init__(swarm)
+        self._swarm: SwarmDecentralizedBase = swarm
 
         self._best_global_score: float = float("-inf")
         self._best_global_position: np.ndarray = self._best_position
@@ -236,6 +237,7 @@ class ParticleDecentralizedBase(ParticleBase):
 class ParticleDecentralized(ParticleDecentralizedBase):
     def __init__(self, swarm: 'SwarmDecentralized'):
         super().__init__(swarm)
+        self._swarm: SwarmDecentralized = swarm
 
     def update(self):
         super().update()
@@ -249,6 +251,7 @@ class ParticleDecentralized(ParticleDecentralizedBase):
 class ParticleCorrupted(ParticleDecentralizedBase):
     def __init__(self, swarm: 'SwarmCorrupted'):
         super().__init__(swarm)
+        self._swarm: SwarmCorrupted = swarm
 
         scale = self._swarm.scene.hyperparameters.noise_scale
         self._best_score += uniform(-np.linalg.norm(self._position - self._swarm.scene.answer.position),
@@ -400,7 +403,7 @@ class SwarmCentralized(SwarmBase):
         plt.pause(2.)
         plt.close(figure)
 
-    def run(self) -> tuple[int, float, float, int]:
+    def run(self) -> tuple[int | float, ...]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
@@ -541,7 +544,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
         if self._scene.verbose > 0:
             self.show_current_position("Начальное положение")
 
-    def run(self) -> tuple[int, float, float, float, float, int]:
+    def run(self) -> tuple[int | float, ...]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
@@ -633,7 +636,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
                 self._best_global_score = self.scene.field.target_function(*particle.best_position)
                 self._best_global_position = particle.best_position
 
-    def run(self) -> tuple[int, float, float, float, float, int]:
+    def run(self) -> tuple[int | float, ...]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
