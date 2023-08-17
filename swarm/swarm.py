@@ -108,7 +108,7 @@ class ParticleBase(ParticleInterface):
                 self._position: np.ndarray = np.array([uniform(0, field_width), field_height])
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
         elif self._swarm.scene.spawn_type == "small_area":
-            factor: float = self._swarm.scene.position_scale
+            factor: float = self._swarm.scene.position_factor
             start_location: np.ndarray = self._swarm.scene.spawn_start_location
             if self._swarm.scene.edge == 0:  # left
                 self._position: np.ndarray = np.array([0, uniform(start_location[1] - field_height / factor,
@@ -281,7 +281,7 @@ class SwarmInterface(ABC):
         pass
 
     @abstractmethod
-    def release_the_swarm(self) -> tp.Any:
+    def run(self) -> tp.Any:
         pass
 
     @abstractmethod
@@ -400,7 +400,7 @@ class SwarmCentralized(SwarmBase):
         plt.pause(2.)
         plt.close(figure)
 
-    def release_the_swarm(self) -> tuple[int, float, float, int]:
+    def run(self) -> tuple[int, float, float, int]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
@@ -541,7 +541,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
         if self._scene.verbose > 0:
             self.show_current_position("Начальное положение")
 
-    def release_the_swarm(self) -> tuple[int, float, float, float, float, int]:
+    def run(self) -> tuple[int, float, float, float, float, int]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
@@ -633,7 +633,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
                 self._best_global_score = self.scene.field.target_function(*particle.best_position)
                 self._best_global_position = particle.best_position
 
-    def release_the_swarm(self) -> tuple[int, float, float, float, float, int]:
+    def run(self) -> tuple[int, float, float, float, float, int]:
         early_stopping_small_velocity_count = 0
         early_stopping_small_velocity = False
 
