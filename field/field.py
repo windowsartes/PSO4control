@@ -151,10 +151,10 @@ class GaussianField(FieldInterface):
         """
         return np.array([float(value) for value in self._hessian.subs([('x', x), ('y', y)])]).reshape((2, 2))
 
-    def show(self, field_size_scale: int = 100) -> None:
+    def show(self) -> None:
         # since width and height are round, ceil doesn't affect;
-        x_values: np.ndarray = np.linspace(0, self._width, ceil(self._width * field_size_scale))
-        y_values: np.ndarray = np.linspace(0, self._height, ceil(self._height * field_size_scale))
+        x_values: np.ndarray = np.linspace(0, self._width, ceil(self._width * self._quality_scale))
+        y_values: np.ndarray = np.linspace(0, self._height, ceil(self._height * self._quality_scale))
 
         x_grid, y_grid = np.meshgrid(x_values, y_values)
 
@@ -174,11 +174,11 @@ class GaussianField(FieldInterface):
 
         plt.show()
 
-    def compute_and_save_field(self, path_to_file: str = None, field_size_scale: int = 100) -> None:
+    def compute_and_save_field(self, path_to_file: str = None) -> None:
         fig, ax = plt.subplots()
 
-        x_values: np.ndarray = np.linspace(0, self._width, ceil(self._width * field_size_scale))
-        y_values: np.ndarray = np.linspace(0, self._height, ceil(self._height * field_size_scale))
+        x_values: np.ndarray = np.linspace(0, self._width, ceil(self._width * self._quality_scale))
+        y_values: np.ndarray = np.linspace(0, self._height, ceil(self._height * self._quality_scale))
 
         x_grid, y_grid = np.meshgrid(x_values, y_values)
 
