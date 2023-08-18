@@ -58,6 +58,11 @@ class FieldInterface(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def quality_scale(self):
+        pass
+
     @abstractmethod
     def target_function(self):
         """
@@ -101,13 +106,14 @@ class FieldInterface(ABC):
 
 
 class GaussianField(FieldInterface):
-    def __init__(self, height: float, width: float,
+    def __init__(self, height: float, width: float, quality_scale: float,
                  target_function: tp.Callable[[float, float, tp.Optional[tuple[float, float]],
                                                tp.Optional[float]], float],
                  target_function_symbolic: tp.Callable[[sympy.Symbol, sympy.Symbol, tp.Optional[tuple[float, float]],
                                                         tp.Optional[float]], tp.Any]):
         self._height: float = height
         self._width: float = width
+        self._quality_scale: float = quality_scale
         self._target_function: tp.Callable[[float, float, tp.Optional[tuple[float, float]],
                                             tp.Optional[float]], float] = target_function
         self._f: tp.Callable[[sympy.Symbol, sympy.Symbol, tp.Optional[tuple[float, float]],
