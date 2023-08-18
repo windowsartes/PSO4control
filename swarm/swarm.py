@@ -308,7 +308,7 @@ class SwarmBase(SwarmInterface):
 
         self._particles: list[ParticleBase] = []
 
-        if self._scene.verbose > 0:
+        if self._scene.verbosity.value > 0:
             if not os.path.isfile("./stored_field/filed.pickle"):
                 self.scene.field.compute_and_save_field()
 
@@ -460,8 +460,8 @@ class SwarmCentralized(SwarmBase):
                 early_stopping_small_velocity = True
                 break
 
-            if i % 10 == 0:
-                if self.scene.verbose > 1:
+            if i % self._scene.verbosity.show_period == 0:
+                if self._scene.verbosity.value > 1:
                     self.show_current_position(f"Итерация №{i}")
 
             early_stopping_small_velocity_count = 0
@@ -483,7 +483,7 @@ class SwarmCentralized(SwarmBase):
         else:
             result = result + [0]
 
-        if self.scene.verbose > 0:
+        if self._scene.verbosity.value > 0:
             self.show_current_position("Последняя итерация")
 
         return tuple(result)
@@ -562,7 +562,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
 
         plt.ion()
 
-        if self._scene.verbose > 0:
+        if self._scene.verbosity.value > 0:
             self.show_current_position("Начальное положение")
 
     def run(self) -> tuple[int | float, ...]:
@@ -611,8 +611,8 @@ class SwarmDecentralized(SwarmDecentralizedBase):
                 early_stopping_small_velocity = True
                 break
 
-            if i % 10 == 0:
-                if self._scene.verbose > 1:
+            if i % self._scene.verbosity.show_period == 0:
+                if self._scene.verbosity.value > 1:
                     self.show_current_position(str(i))
 
             early_stopping_small_velocity_count = 0
@@ -636,7 +636,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
         else:
             result = result + [0]
 
-        if self._scene.verbose > 0:
+        if self._scene.verbosity.value > 0:
             self.show_current_position(f"Итерация №{i}")
 
         return tuple(result)
@@ -656,7 +656,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
 
         plt.ion()
 
-        if self._scene.verbose > 0:
+        if self._scene.verbosity.value > 0:
             self.show_current_position("Начальное положение")
 
     def update_global_information(self):
@@ -712,8 +712,8 @@ class SwarmCorrupted(SwarmDecentralizedBase):
                 early_stopping_small_velocity = True
                 break
 
-            if i % 10 == 0:
-                if self._scene.verbose > 1:
+            if i % self._scene.verbosity.show_period == 0:
+                if self._scene.verbosity.value > 1:
                     self.show_current_position(f"Итерация №{i}")
 
             early_stopping_small_velocity_count = 0
@@ -737,7 +737,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
         else:
             result = result + [0]
 
-        if self._scene.verbose > 0:
+        if self._scene.verbosity.value > 0:
             self.show_current_position("Последняя итерация")
 
         return tuple(result)

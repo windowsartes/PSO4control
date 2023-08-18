@@ -122,6 +122,7 @@ class Answer:
     def value(self):
         return self._value
 
+
 @dataclass()
 class Noise:
     _noise_type: str
@@ -132,7 +133,7 @@ class Noise:
             return normal(0, np.linalg.norm(particle_position - answer_position)) * self._noise_scale
         elif self._noise_type == "uniform":
             return uniform(-np.linalg.norm(particle_position - answer_position),
-                                    np.linalg.norm(particle_position - answer_position)) * self._noise_scale
+                           np.linalg.norm(particle_position - answer_position)) * self._noise_scale
 
         raise ValueError("Please, check the 'noise type' field at your config;")
 
