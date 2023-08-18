@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 
 import numpy as np
-from numpy.random import uniform
+from numpy.random import uniform, normal
 
 from field import field as fl
 from logger import custom_logger
@@ -56,6 +56,8 @@ class HyperparametersCentralizedSwarm:
 
     _verbosity: Verbosity
 
+    _position_factor: float
+
     @property
     def w(self):
         return self._w
@@ -83,6 +85,10 @@ class HyperparametersCentralizedSwarm:
     @property
     def verbosity(self):
         return self._verbosity
+
+    @property
+    def position_factor(self):
+        return self._position_factor
 
 
 @dataclass()
@@ -116,6 +122,20 @@ class Answer:
     def value(self):
         return self._value
 
+@dataclass()
+class Noise:
+    _noise_type: str
+    _noise_scale: float
+
+    def add_noise(self, particle_position: np.ndarray, answer_position: np.ndarray):
+        if self._noise_type == "normal":
+            return normal(0, np.linalg.norm(particle_position - answer_position)) * self._noise_scale
+        elif self._noise_type == "uniform":
+            return uniform(-np.linalg.norm(particle_position - answer_position),
+                                    np.linalg.norm(particle_position - answer_position)) * self._noise_scale
+
+        raise ValueError("Please, check the 'noise type' field at your config;")
+
 
 @dataclass
 class _Hyperparameters:
@@ -125,8 +145,9 @@ class _Hyperparameters:
     _velocity_scale: float
     _inertia_scheduler_step_size: int
     _inertia_scheduler_gamma: float
-    _connect_radius: float = float("inf")
-    _noise_scale: float = 0.001425
+    _connect_radius: float
+    _noise_scale: float
+    _position_factor: float
 
     @property
     def noise_scale(self):
@@ -176,6 +197,10 @@ class _Hyperparameters:
     def inertia_scheduler_gamma(self, new_value: float):
         self._inertia_scheduler_gamma = new_value
 
+    @property
+    def position_factor(self):
+        return self._position_factor
+
 
 class Scene:
     def __init__(self, path_to_config: str):
@@ -217,7 +242,8 @@ class Scene:
                                                     _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
                                                     _verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
                                                     _show_period=config["solver"]["verbosity"]["show_period"]),
-                                                    _early_stopping=config["solver"]["hyperparams"]["early_stopping"])
+                                                    _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
+                                                    _position_factor=config["solver"]["hyperparams"]["position_factor"])
             elif config["solver"]["specification"] == "decentralized":
                 self.solver: sw.SwarmDecentralized =\
                     sw.SwarmDecentralized(n_particles=config["solver"]["hyperparams"]["n_particles"],
@@ -235,7 +261,9 @@ class Scene:
                                                       _show_period=config["solver"]["verbosity"]["show_period"]),
                                                       _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
                                                       _connection_radius=
-                                                      config["solver"]["hyperparams"]["connection_radius"])
+                                                      config["solver"]["hyperparams"]["connection_radius"],
+                                                      _position_factor=
+                                                      config["solver"]["hyperparams"]["position_factor"])
             elif config["solver"]["specification"] == "corrupted":
                 self.solver: sw.SwarmCorrupted = \
                     sw.SwarmCorrupted(n_particles=config["solver"]["hyperparams"]["n_particles"],
@@ -252,33 +280,36 @@ class Scene:
                                                   _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
                                                   _connection_radius=
                                                   config["solver"]["hyperparams"]["connection_radius"],
-                                                  _noise=config["solver"]["noise"])
+                                                  _noise=config["solver"]["noise"],
+                                                  _position_factor=config["solver"]["hyperparams"]["position_factor"])
+                self.noise: Noise = Noise(_noise_type=config["solver"]["noise"]["type"],
+                                          _noise_scale=config["solver"]["noise"]["scale"])
             else:
                 raise ValueError("Please, check your swarm solver's specification;")
 
             self.spawn_type: str = config["solver"]["spawn_type"]
             if self.spawn_type == "small_area":
                 self.edge: int = np.random.randint(4)
-                self.position_factor: float = 20
+                position_factor: float = self.hyperparameters.position_factor
                 if self.edge == 0:  # left
                     self.spawn_start_location: np.ndarray = np.array(
-                        [0, uniform(self.field.height / self.position_factor,
+                        [0, uniform(self.field.height / position_factor,
                                     self.field.height -
-                                    self.field.height / self.position_factor)])
+                                    self.field.height / position_factor)])
                 elif self.edge == 1:  # right
                     self.spawn_start_location: np.ndarray = np.array([self.field.width,
-                                                                      uniform(self.field.height / self.position_factor,
+                                                                      uniform(self.field.height / position_factor,
                                                                               self.field.height -
-                                                                              self.field.height/self.position_factor)])
+                                                                              self.field.height / position_factor)])
                 elif self.edge == 2:  # top
-                    self.spawn_start_location: np.ndarray = np.array([uniform(self.field.width / self.position_factor,
+                    self.spawn_start_location: np.ndarray = np.array([uniform(self.field.width / position_factor,
                                                                               self.field.width -
-                                                                              self.field.width / self.position_factor),
+                                                                              self.field.width / position_factor),
                                                                       0])
                 elif self.edge == 3:  # bottom
-                    self.spawn_start_location: np.ndarray = np.array([uniform(self.field.width / self.position_factor,
+                    self.spawn_start_location: np.ndarray = np.array([uniform(self.field.width / position_factor,
                                                                               self.field.width -
-                                                                              self.field.width / self.position_factor),
+                                                                              self.field.width / position_factor),
                                                                       self.field.height])
 
     def run(self) -> tuple[int|float, ...]:
