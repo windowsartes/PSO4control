@@ -108,7 +108,7 @@ class ParticleBase(ParticleInterface):
                 self._position: np.ndarray = np.array([uniform(0, field_width), field_height])
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
         elif self._swarm.scene.spawn_type == "small_area":
-            factor: float = self._swarm.scene.position_factor
+            factor: float = self._swarm.scene.hyperparameters.position_factor
             start_location: np.ndarray = self._swarm.scene.spawn_start_location
             if self._swarm.scene.edge == 0:  # left
                 self._position: np.ndarray = np.array([0, uniform(start_location[1] - field_height / factor,
@@ -130,7 +130,7 @@ class ParticleBase(ParticleInterface):
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
 
         self._velocity /= self._swarm.scene.hyperparameters.velocity_scale
-        self._best_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1])
+        self._best_score: float = self._swarm.scene.field.target_function(*list(self._position))
         self._best_position: np.ndarray = self._position
 
         self._path_length: float = 0
@@ -189,7 +189,7 @@ class ParticleCentralized(ParticleBase):
 
         self._path_length += np.linalg.norm(self._velocity)
 
-        current_score = self._swarm.scene.field.target_function(self._position[0], self._position[1])
+        current_score = self._swarm.scene.field.target_function(*list(self._position))
 
         if current_score > self._best_score:
             self._best_score = current_score
@@ -260,10 +260,14 @@ class ParticleCorrupted(ParticleDecentralizedBase):
     def update(self):
         super().update()
 
-        scale = self._swarm.scene.hyperparameters.noise_scale
+        current_score: float = self._swarm.scene.field.target_function(*list(self._position)) + \
+            self._swarm.scene.noise.add_noise(self._position, self._swarm.scene.answer.position)
+
+        """
         current_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1]) + \
                                uniform(-np.linalg.norm(self._position - self._swarm.scene.answer.position),
                                        np.linalg.norm(self._position - self._swarm.scene.answer.position)) * scale
+        """
 
         if current_score > self._best_score:
             self._best_score = current_score
@@ -342,8 +346,12 @@ class SwarmCentralized(SwarmBase):
 
         plt.ion()
 
+        if self._scene.verbosity.value > 0:
+            self.show_current_position("Начальное положение")
+        """
         if self._scene.verbose > 0:
             self.show_current_position("Начальное положение")
+        """
 
     def get_information_from_particle(self, particle: ParticleCentralized):
         if particle.best_score > self._best_global_score:
@@ -367,7 +375,9 @@ class SwarmCentralized(SwarmBase):
         self._best_global_position = new_position
 
     def show_current_position(self, title: str):
-        correctness_scale = 100
+        """
+        correctness_scale = self._scene.field.quality_scale
+        """
 
         coordinates: np.ndarray = self.get_swarm_positions()
 
@@ -386,16 +396,17 @@ class SwarmCentralized(SwarmBase):
             # You can also use window.setGeometry
             figure.canvas.manager.window.move(x, y)
 
-        ax.scatter(coordinates[:, 0] * correctness_scale, coordinates[:, 1] * correctness_scale,
+        ax.scatter(coordinates[:, 0] * self._scene.field.quality_scale,
+                   coordinates[:, 1] * self._scene.field.quality_scale,
                    marker='o', color='b', ls='', s=40)
 
-        ax.set_xlim(0, self.scene.field.width * correctness_scale)
-        ax.set_ylim(0, self.scene.field.height * correctness_scale)
+        ax.set_xlim(0, self.scene.field.width * self._scene.field.quality_scale)
+        ax.set_ylim(0, self.scene.field.height * self._scene.field.quality_scale)
         ax.set_title(title)
 
         for index, label in enumerate(np.arange(len(coordinates))):
-            ax.annotate(label, (coordinates[index][0] * correctness_scale,
-                                coordinates[index][1] * correctness_scale), fontsize=10)
+            ax.annotate(label, (coordinates[index][0] * self._scene.field.quality_scale,
+                                coordinates[index][1] * self._scene.field.quality_scale), fontsize=10)
 
         plt.draw()
         plt.gcf().canvas.flush_events()
@@ -409,10 +420,20 @@ class SwarmCentralized(SwarmBase):
 
         early_stopping_around_answer = False
 
+        """
         eps_position = 0.0001
         eps_velocity = 0.0001
+        """
 
+        eps_position = self._scene.hyperparameters.early_stopping["around_point"]["epsilon"]
+        ratio_position = self._scene.hyperparameters.early_stopping["around_point"]["ratio"]
+
+        eps_velocity = self._scene.hyperparameters.early_stopping["velocity"]["epsilon"]
+        ratio_velocity = self._scene.hyperparameters.early_stopping["velocity"]["ratio"]
+
+        """
         ratio = 0.75
+        """
 
         for i in range(1, self._n_iterations + 1):
             for j in range(self._n_particles):
@@ -424,7 +445,7 @@ class SwarmCentralized(SwarmBase):
                     if np.linalg.norm(self._particles[j].position - self._particles[k].position) < eps_position:
                         early_stopping_around_answer_count += 1
 
-                if early_stopping_around_answer_count > ratio * self._n_particles:
+                if early_stopping_around_answer_count > ratio_position * self._n_particles:
                     early_stopping_around_answer = True
                     break
 
@@ -435,7 +456,7 @@ class SwarmCentralized(SwarmBase):
             if early_stopping_around_answer:
                 break
 
-            elif early_stopping_small_velocity_count > ratio * self._n_particles:
+            elif early_stopping_small_velocity_count > ratio_velocity * self._n_particles:
                 early_stopping_small_velocity = True
                 break
 
@@ -475,8 +496,6 @@ class SwarmDecentralizedBase(SwarmBase):
         self.connection_radius = connection_radius
 
     def show_current_position(self, title: str):
-        correctness_scale = 100
-
         coordinates: np.ndarray = self.get_swarm_positions()
 
         figure = pickle.load(open("./stored_field/field.pickle", "rb"))
@@ -494,19 +513,21 @@ class SwarmDecentralizedBase(SwarmBase):
             # You can also use window.setGeometry
             figure.canvas.manager.window.move(x, y)
 
-        ax.scatter(coordinates[:, 0]*correctness_scale, coordinates[:, 1]*correctness_scale,
+        ax.scatter(coordinates[:, 0]*self._scene.hyperparameters.quality_scale,
+                   coordinates[:, 1]*self._scene.hyperparameters.quality_scale,
                    marker='o', color='b', ls='', s=20)
 
-        ax.set_xlim(0, self.scene.field.width*correctness_scale)
-        ax.set_ylim(0, self.scene.field.height*correctness_scale)
+        ax.set_xlim(0, self.scene.field.width*self._scene.hyperparameters.quality_scale)
+        ax.set_ylim(0, self.scene.field.height*self._scene.hyperparameters.quality_scale)
         ax.set_title(title)
 
         for index, label in enumerate(np.arange(len(coordinates))):
-            ax.annotate(label, (coordinates[index][0]*correctness_scale,
-                                coordinates[index][1]*correctness_scale), fontsize=10)
+            ax.annotate(label, (coordinates[index][0]*self._scene.hyperparameters.quality_scale,
+                                coordinates[index][1]*self._scene.hyperparameters.quality_scale), fontsize=10)
 
         for coordinate in coordinates:
-            circle = mpatches.Circle(coordinate*correctness_scale, self.connection_radius*correctness_scale,
+            circle = mpatches.Circle(coordinate*self._scene.hyperparameters.quality_scale,
+                                     self.connection_radius*self._scene.hyperparameters.quality_scale,
                                      color="g", fill=False, linestyle="--")
             ax.add_patch(circle)
 
@@ -550,10 +571,18 @@ class SwarmDecentralized(SwarmDecentralizedBase):
 
         early_stopping_around_answer = False
 
+        """
         eps_position = 0.0001
         eps_velocity = 0.0001
 
         ratio = 0.75
+        """
+
+        eps_position = self._scene.hyperparameters.early_stopping["around_point"]["epsilon"]
+        ratio_position = self._scene.hyperparameters.early_stopping["around_point"]["ratio"]
+
+        eps_velocity = self._scene.hyperparameters.early_stopping["velocity"]["epsilon"]
+        ratio_velocity = self._scene.hyperparameters.early_stopping["velocity"]["ratio"]
 
         for i in range(1, self._n_iterations + 1):
             for j in range(self._n_particles):
@@ -568,7 +597,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
                     if np.linalg.norm(self._particles[j].position - self._particles[k].position) < eps_position:
                         early_stopping_around_answer_count += 1
 
-                if early_stopping_around_answer_count > ratio * self._n_particles:
+                if early_stopping_around_answer_count > ratio_position * self._n_particles:
                     early_stopping_around_answer = True
                     break
 
@@ -578,7 +607,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
 
             if early_stopping_around_answer:
                 break
-            elif early_stopping_small_velocity_count > ratio * self._n_particles:
+            elif early_stopping_small_velocity_count > ratio_velocity * self._n_particles:
                 early_stopping_small_velocity = True
                 break
 
@@ -642,10 +671,18 @@ class SwarmCorrupted(SwarmDecentralizedBase):
 
         early_stopping_around_answer = False
 
+        """
         eps_position = 0.0001
         eps_velocity = 0.0001
 
         ratio = 0.75
+        """
+
+        eps_position = self._scene.hyperparameters.early_stopping["around_point"]["epsilon"]
+        ratio_position = self._scene.hyperparameters.early_stopping["around_point"]["ratio"]
+
+        eps_velocity = self._scene.hyperparameters.early_stopping["velocity"]["epsilon"]
+        ratio_velocity = self._scene.hyperparameters.early_stopping["velocity"]["ratio"]
 
         for i in range(1, self._n_iterations + 1):
             for j in range(self._n_particles):
@@ -660,7 +697,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
                     if np.linalg.norm(self._particles[j].position - self._particles[k].position) < eps_position:
                         early_stopping_around_answer_count += 1
 
-                if early_stopping_around_answer_count > ratio * self._n_particles:
+                if early_stopping_around_answer_count > ratio_position * self._n_particles:
                     early_stopping_around_answer = True
                     break
 
@@ -671,7 +708,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
             if early_stopping_around_answer:
                 break
 
-            elif early_stopping_small_velocity_count > ratio * self._n_particles:
+            elif early_stopping_small_velocity_count > ratio_velocity * self._n_particles:
                 early_stopping_small_velocity = True
                 break
 
