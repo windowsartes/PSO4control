@@ -387,8 +387,8 @@ class SceneGrad:
         self.solver = gradient_methods.GradientLift(self, n_iterations)
 
     def run(self):
-        results = self.solver.run()
-        return results
+        result = self.solver.run()
+        return result
 
 
 if __name__ == "__main__":
@@ -465,7 +465,7 @@ if __name__ == "__main__":
     _ = my_scene.run()
     print(_)
     """
-    my_scene = Scene("./confing_examples/swarm_corrupted.json")
+    my_scene = Scene("./confing_examples/swarm_centralized.json")
     results = my_scene.run()
 
     """
