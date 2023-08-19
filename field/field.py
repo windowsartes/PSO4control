@@ -132,6 +132,10 @@ class GaussianField(FieldInterface):
         return self._width
 
     @property
+    def quality_scale(self):
+        return self._quality_scale
+
+    @property
     def target_function(self) -> tp.Callable[[float, float, tp.Optional[tuple[float, float]],
                                               tp.Optional[float]], float]:
         return self._target_function
@@ -198,5 +202,5 @@ class GaussianField(FieldInterface):
 
 
 if __name__ == "__main__":
-    field = GaussianField(10, 10, gaussian, gaussian_symbolic)
+    field = GaussianField(10, 10, 100, gaussian, gaussian_symbolic)
     field.show()

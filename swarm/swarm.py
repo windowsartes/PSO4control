@@ -129,7 +129,7 @@ class ParticleBase(ParticleInterface):
                                                                start_location[0] + field_width / factor), field_height])
                 self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
 
-        self._velocity /= self._swarm.scene.hyperparameters.velocity_scale
+        self._velocity /= self._swarm.scene.hyperparameters.velocity_factor
         self._best_score: float = self._swarm.scene.field.target_function(*list(self._position))
         self._best_position: np.ndarray = self._position
 
@@ -177,8 +177,8 @@ class ParticleCentralized(ParticleBase):
         super().__init__(swarm)
 
     def update(self):
-        r_personal: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_scale
-        r_global: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_scale
+        r_personal: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_factor
+        r_global: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_factor
 
         self._velocity = self._swarm.scene.hyperparameters.w * self._velocity + \
                          self._swarm.scene.hyperparameters.c1 * r_personal * (self._best_position - self._position) + \
@@ -209,8 +209,8 @@ class ParticleDecentralizedBase(ParticleBase):
         self._best_global_position: np.ndarray = self._best_position
 
     def update(self):
-        r_personal: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_scale
-        r_global: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_scale
+        r_personal: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_factor
+        r_global: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_factor
 
         self._velocity = self._swarm.scene.hyperparameters.w * self._velocity + \
                          self._swarm.scene.hyperparameters.c1 * r_personal * (self._best_position - self._position) + \
@@ -228,7 +228,8 @@ class ParticleDecentralizedBase(ParticleBase):
         Returns: Nothing
         """
         for particle in self._swarm.particles:
-            if np.linalg.norm(self.position - particle.position) < self._swarm.connection_radius:
+            if np.linalg.norm(self.position - particle.position) < \
+                    self._swarm.connection_radius*self._swarm.scene.field.height:
                 if self._best_global_score < particle.best_score:
                     self._best_global_score = particle.best_score
                     self._best_global_position = particle.best_position
@@ -253,9 +254,13 @@ class ParticleCorrupted(ParticleDecentralizedBase):
         super().__init__(swarm)
         self._swarm: SwarmCorrupted = swarm
 
+        """
         scale = self._swarm.scene.hyperparameters.noise_scale
         self._best_score += uniform(-np.linalg.norm(self._position - self._swarm.scene.answer.position),
                                     np.linalg.norm(self._position - self._swarm.scene.answer.position)) * scale
+        """
+
+        self._best_score += self._swarm.scene.noise.add_noise(self._position, self._swarm.scene.answer.position)
 
     def update(self):
         super().update()
@@ -439,7 +444,7 @@ class SwarmCentralized(SwarmBase):
             for j in range(self._n_particles):
                 self._particles[j].update()
 
-            for j in range(ceil(ratio * self._n_particles)):
+            for j in range(ceil(ratio_position * self._n_particles)):
                 early_stopping_around_answer_count = 0
                 for k in range(self._n_particles):
                     if np.linalg.norm(self._particles[j].position - self._particles[k].position) < eps_position:
@@ -513,21 +518,21 @@ class SwarmDecentralizedBase(SwarmBase):
             # You can also use window.setGeometry
             figure.canvas.manager.window.move(x, y)
 
-        ax.scatter(coordinates[:, 0]*self._scene.hyperparameters.quality_scale,
-                   coordinates[:, 1]*self._scene.hyperparameters.quality_scale,
+        ax.scatter(coordinates[:, 0]*self._scene.field.quality_scale,
+                   coordinates[:, 1]*self._scene.field.quality_scale,
                    marker='o', color='b', ls='', s=20)
 
-        ax.set_xlim(0, self.scene.field.width*self._scene.hyperparameters.quality_scale)
-        ax.set_ylim(0, self.scene.field.height*self._scene.hyperparameters.quality_scale)
+        ax.set_xlim(0, self.scene.field.width*self._scene.field.quality_scale)
+        ax.set_ylim(0, self.scene.field.height*self._scene.field.quality_scale)
         ax.set_title(title)
 
         for index, label in enumerate(np.arange(len(coordinates))):
-            ax.annotate(label, (coordinates[index][0]*self._scene.hyperparameters.quality_scale,
-                                coordinates[index][1]*self._scene.hyperparameters.quality_scale), fontsize=10)
+            ax.annotate(label, (coordinates[index][0]*self._scene.field.quality_scale,
+                                coordinates[index][1]*self._scene.field.quality_scale), fontsize=10)
 
         for coordinate in coordinates:
-            circle = mpatches.Circle(coordinate*self._scene.hyperparameters.quality_scale,
-                                     self.connection_radius*self._scene.hyperparameters.quality_scale,
+            circle = mpatches.Circle(coordinate*self._scene.field.quality_scale,
+                                     self.connection_radius*self._scene.field.height*self._scene.field.quality_scale,
                                      color="g", fill=False, linestyle="--")
             ax.add_patch(circle)
 
@@ -591,7 +596,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
             for j in range(self._n_particles):
                 self._particles[j].update_my_global_information()
 
-            for j in range(ceil(ratio*self._n_particles)):
+            for j in range(ceil(ratio_position*self._n_particles)):
                 early_stopping_around_answer_count = 0
                 for k in range(self._n_particles):
                     if np.linalg.norm(self._particles[j].position - self._particles[k].position) < eps_position:
@@ -691,7 +696,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
             for j in range(self._n_particles):
                 self._particles[j].update_my_global_information()
 
-            for j in range(ceil(ratio*self._n_particles)):
+            for j in range(ceil(ratio_position*self._n_particles)):
                 early_stopping_around_answer_count = 0
                 for k in range(self._n_particles):
                     if np.linalg.norm(self._particles[j].position - self._particles[k].position) < eps_position:

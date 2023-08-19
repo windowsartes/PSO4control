@@ -216,6 +216,7 @@ class Scene:
             self.field: fl.FieldInterface = \
                 fl.GaussianField(height=config["field"]["height"],
                                  width=config["field"]["width"],
+                                 quality_scale=config["field"]["quality_scale"],
                                  target_function=function_name2object[config["field"]["target_function"]],
                                  target_function_symbolic=
                                  symbolic_function_name2object[config["field"]["target_function"]])
@@ -231,67 +232,10 @@ class Scene:
             self.verbosity: Verbosity = Verbosity(_value=config["solver"]["verbosity"]["value"],
                                                   _show_period=config["solver"]["verbosity"]["show_period"])
 
-            if config["solver"]["specification"] == "centralized":
-                self.solver: sw.SwarmCentralized = \
-                    sw.SwarmCentralized(n_particles=config["solver"]["hyperparams"]["n_particles"],
-                                        n_iterations=config["solver"]["hyperparams"]["n_iterations"],
-                                        scene=self)
-                self.hyperparameters: HyperparametersCentralizedSwarm = \
-                    HyperparametersCentralizedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
-                                                    _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
-                                                    _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
-                                                    _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
-                                                    _verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                                    _show_period=config["solver"]["verbosity"]["show_period"]),
-                                                    _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
-                                                    _position_factor=config["solver"]["hyperparams"]["position_factor"])
-            elif config["solver"]["specification"] == "decentralized":
-                self.solver: sw.SwarmDecentralized =\
-                    sw.SwarmDecentralized(n_particles=config["solver"]["hyperparams"]["n_particles"],
-                                          n_iterations=config["solver"]["hyperparams"]["n_iterations"],
-                                          connection_radius=config["solver"]["hyperparams"]["connection_radius"],
-                                          scene=self)
-                self.hyperparameters: HyperparametersDecentralizedSwarm = \
-                    HyperparametersDecentralizedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
-                                                      _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
-                                                      _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
-                                                      _velocity_factor=
-                                                      config["solver"]["hyperparams"]["velocity_factor"],
-                                                      _verbosity=
-                                                      Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                                      _show_period=config["solver"]["verbosity"]["show_period"]),
-                                                      _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
-                                                      _connection_radius=
-                                                      config["solver"]["hyperparams"]["connection_radius"],
-                                                      _position_factor=
-                                                      config["solver"]["hyperparams"]["position_factor"])
-            elif config["solver"]["specification"] == "corrupted":
-                self.solver: sw.SwarmCorrupted = \
-                    sw.SwarmCorrupted(n_particles=config["solver"]["hyperparams"]["n_particles"],
-                                      n_iterations=config["solver"]["hyperparams"]["n_iterations"],
-                                      connection_radius=config["solver"]["hyperparams"]["connection_radius"],
-                                      scene=self)
-                self.hyperparameters: HyperparametersCorruptedSwarm = \
-                    HyperparametersCorruptedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
-                                                  _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
-                                                  _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
-                                                  _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
-                                                  _verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                                  _show_period=config["solver"]["verbosity"]["show_period"]),
-                                                  _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
-                                                  _connection_radius=
-                                                  config["solver"]["hyperparams"]["connection_radius"],
-                                                  _noise=config["solver"]["noise"],
-                                                  _position_factor=config["solver"]["hyperparams"]["position_factor"])
-                self.noise: Noise = Noise(_noise_type=config["solver"]["noise"]["type"],
-                                          _noise_scale=config["solver"]["noise"]["scale"])
-            else:
-                raise ValueError("Please, check your swarm solver's specification;")
-
             self.spawn_type: str = config["solver"]["spawn_type"]
             if self.spawn_type == "small_area":
                 self.edge: int = np.random.randint(4)
-                position_factor: float = self.hyperparameters.position_factor
+                position_factor: float = config["solver"]["hyperparams"]["position_factor"]
                 if self.edge == 0:  # left
                     self.spawn_start_location: np.ndarray = np.array(
                         [0, uniform(self.field.height / position_factor,
@@ -313,12 +257,73 @@ class Scene:
                                                                               self.field.width / position_factor),
                                                                       self.field.height])
 
+            if config["solver"]["specification"] == "centralized":
+                self.hyperparameters: HyperparametersCentralizedSwarm = \
+                    HyperparametersCentralizedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
+                                                    _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
+                                                    _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
+                                                    _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
+                                                    _verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
+                                                                         _show_period=config["solver"]["verbosity"][
+                                                                             "show_period"]),
+                                                    _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
+                                                    _position_factor=config["solver"]["hyperparams"]["position_factor"])
+                self.solver: sw.SwarmCentralized = \
+                    sw.SwarmCentralized(n_particles=config["solver"]["hyperparams"]["n_particles"],
+                                        n_iterations=config["solver"]["hyperparams"]["n_iterations"],
+                                        scene=self)
+            elif config["solver"]["specification"] == "decentralized":
+                self.hyperparameters: HyperparametersDecentralizedSwarm = \
+                    HyperparametersDecentralizedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
+                                                      _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
+                                                      _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
+                                                      _velocity_factor=
+                                                      config["solver"]["hyperparams"]["velocity_factor"],
+                                                      _verbosity=
+                                                      Verbosity(_value=config["solver"]["verbosity"]["value"],
+                                                                _show_period=config["solver"]["verbosity"][
+                                                                    "show_period"]),
+                                                      _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
+                                                      _connection_radius=
+                                                      config["solver"]["hyperparams"]["connection_radius"],
+                                                      _position_factor=
+                                                      config["solver"]["hyperparams"]["position_factor"])
+                self.solver: sw.SwarmDecentralized =\
+                    sw.SwarmDecentralized(n_particles=config["solver"]["hyperparams"]["n_particles"],
+                                          n_iterations=config["solver"]["hyperparams"]["n_iterations"],
+                                          connection_radius=config["solver"]["hyperparams"]["connection_radius"],
+                                          scene=self)
+            elif config["solver"]["specification"] == "corrupted":
+                self.hyperparameters: HyperparametersCorruptedSwarm = \
+                    HyperparametersCorruptedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
+                                                  _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
+                                                  _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
+                                                  _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
+                                                  _verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
+                                                                       _show_period=config["solver"]["verbosity"][
+                                                                           "show_period"]),
+                                                  _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
+                                                  _connection_radius=
+                                                  config["solver"]["hyperparams"]["connection_radius"],
+                                                  _noise=config["solver"]["noise"],
+                                                  _position_factor=config["solver"]["hyperparams"]["position_factor"])
+                self.noise: Noise = Noise(_noise_type=config["solver"]["noise"]["type"],
+                                          _noise_scale=config["solver"]["noise"]["scale"])
+                self.solver: sw.SwarmCorrupted = \
+                    sw.SwarmCorrupted(n_particles=config["solver"]["hyperparams"]["n_particles"],
+                                      n_iterations=config["solver"]["hyperparams"]["n_iterations"],
+                                      connection_radius=config["solver"]["hyperparams"]["connection_radius"],
+                                      scene=self)
+            else:
+                raise ValueError("Please, check your swarm solver's specification;")
+
     def run(self) -> tuple[int|float, ...]:
         results = self.solver.run()
 
         return results
 
 
+"""
 class _Scene:
     def __init__(self,
                  # field_height: float, field_width: float,
@@ -370,6 +375,7 @@ class _Scene:
         elif swarm_type == "corrupted":
             self.swarm: sw.SwarmCorrupted = sw.SwarmCorrupted(swarm_n_particles, swarm_n_iterations,
                                                               self.hyperparameters._connect_radius, self)
+"""
 
 class SceneGrad:
     def __init__(self, n_iterations, answer: Answer,
@@ -445,9 +451,10 @@ if __name__ == "__main__":
         }
     """
 
+    """
     height = 10.
     width = 10.
-
+    
     answer = Answer(fl.gaussian(height/2, width/2, (height/2, width/2)), np.array([height/2, width/2]))
     field = fl.GaussianField(height, width, fl.gaussian, fl.gaussian_symbolic)
     hyperparams = Hyperparameters(_w=1, _c1=2, _c2=2, _velocity_scale=50,
@@ -457,6 +464,9 @@ if __name__ == "__main__":
     my_scene = Scene(20, 1000, "small_area", 2, answer, field, hyperparams, "centralized")
     _ = my_scene.run()
     print(_)
+    """
+    my_scene = Scene("./confing_examples/swarm_corrupted.json")
+    results = my_scene.run()
 
     """
     height = 10.
