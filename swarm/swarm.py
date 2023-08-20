@@ -351,7 +351,7 @@ class SwarmCentralized(SwarmBase):
 
         plt.ion()
 
-        if self._scene.verbosity.value > 0:
+        if self._scene.verbosity.value > 1:
             self.show_current_position("Начальное положение")
         """
         if self._scene.verbose > 0:
@@ -466,7 +466,7 @@ class SwarmCentralized(SwarmBase):
                 break
 
             if i % self._scene.verbosity.show_period == 0:
-                if self._scene.verbosity.value > 1:
+                if self._scene.verbosity.value > 0:
                     self.show_current_position(f"Итерация №{i}")
 
             early_stopping_small_velocity_count = 0
@@ -567,7 +567,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
 
         plt.ion()
 
-        if self._scene.verbosity.value > 0:
+        if self._scene.verbosity.value > 1:
             self.show_current_position("Начальное положение")
 
     def run(self) -> tuple[int | float, ...]:
@@ -617,7 +617,7 @@ class SwarmDecentralized(SwarmDecentralizedBase):
                 break
 
             if i % self._scene.verbosity.show_period == 0:
-                if self._scene.verbosity.value > 1:
+                if self._scene.verbosity.value > 0:
                     self.show_current_position(str(i))
 
             early_stopping_small_velocity_count = 0
@@ -661,7 +661,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
 
         plt.ion()
 
-        if self._scene.verbosity.value > 0:
+        if self._scene.verbosity.value > 1:
             self.show_current_position("Начальное положение")
 
     def update_global_information(self):
