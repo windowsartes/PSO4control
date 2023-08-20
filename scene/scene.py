@@ -11,8 +11,7 @@ from swarm import swarm as sw
 
 from gradient_methods import gradient_methods
 
-# cause making a json from function isn't trivial, I've used this mappings from str to function object
-
+# cause making a json from function isn't trivial, I've used these mappings from str to function object
 function_name2object = {"gaussian": fl.gaussian}
 symbolic_function_name2object = {"gaussian": fl.gaussian_symbolic}
 
@@ -109,6 +108,25 @@ class HyperparametersCorruptedSwarm(HyperparametersDecentralizedSwarm):
         return self._noise
 
 
+@dataclass()
+class HyperparametersGradientMethod:
+    _velocity_factor: float
+    _verbosity: Verbosity
+    _early_stopping_epsilon: float
+
+    @property
+    def velocity_factor(self):
+        return self._velocity_factor
+
+    @property
+    def verbosity(self):
+        return self._verbosity
+
+    @property
+    def early_stopping_epsilon(self):
+        return self._early_stopping_epsilon
+
+
 class Answer:
     def __init__(self, position: np.ndarray, target_function: str):
         self._position: np.ndarray = np.array(position)
@@ -137,7 +155,7 @@ class Noise:
 
         raise ValueError("Please, check the 'noise type' field at your config;")
 
-
+"""
 @dataclass
 class _Hyperparameters:
     _w: float
@@ -201,6 +219,7 @@ class _Hyperparameters:
     @property
     def position_factor(self):
         return self._position_factor
+"""
 
 
 class Scene:
@@ -316,11 +335,40 @@ class Scene:
                                       scene=self)
             else:
                 raise ValueError("Please, check your swarm solver's specification;")
+        elif config["solver"]["type"] == "gradient":
+            self.verbosity: Verbosity = Verbosity(_value=config["solver"]["verbosity"]["value"],
+                                                  _show_period=config["solver"]["verbosity"]["show_period"])
+            if config["solver"]["specification"] == "lift":
+                self.hyperparameters: HyperparametersGradientMethod = \
+                    HyperparametersGradientMethod(_verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
+                                                                       _show_period=config["solver"]["verbosity"][
+                                                                           "show_period"]),
+                                                  _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
+                                                  _early_stopping_epsilon=
+                                                  config["solver"]["hyperparams"]["early_stopping_epsilon"])
+                self.solver: gradient_methods.GradientLift = gradient_methods.GradientLift(
+                    n_iterations=config["solver"]["hyperparams"]["n_iterations"],
+                    scene=self)
+            elif config["solver"]["specification"] == "newton":
+                self.hyperparameters: HyperparametersGradientMethod = \
+                    HyperparametersGradientMethod(_verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
+                                                                       _show_period=config["solver"]["verbosity"][
+                                                                           "show_period"]),
+                                                  _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
+                                                  _early_stopping_epsilon=
+                                                  config["solver"]["hyperparams"]["early_stopping_epsilon"])
+                self.solver: gradient_methods.NewtonMethod = gradient_methods.NewtonMethod(
+                    n_iterations=config["solver"]["hyperparams"]["n_iterations"],
+                    scene=self)
+            else:
+                raise ValueError("Please, check your solver's specification - it must be either 'lift' or 'newton'")
+        else:
+            raise ValueError("Please, check your solver's type: it must be either 'swarm' or 'gradient';")
 
     def run(self) -> tuple[int|float, ...]:
-        results = self.solver.run()
+        result = self.solver.run()
 
-        return results
+        return result
 
 
 """
@@ -377,6 +425,7 @@ class _Scene:
                                                               self.hyperparameters._connect_radius, self)
 """
 
+"""
 class SceneGrad:
     def __init__(self, n_iterations, answer: Answer,
                  field: fl.GaussianField, verbose):
@@ -389,6 +438,7 @@ class SceneGrad:
     def run(self):
         result = self.solver.run()
         return result
+"""
 
 
 if __name__ == "__main__":
@@ -465,7 +515,7 @@ if __name__ == "__main__":
     _ = my_scene.run()
     print(_)
     """
-    my_scene = Scene("./confing_examples/swarm_centralized.json")
+    my_scene = Scene("./confing_examples/gradient_lift.json")
     results = my_scene.run()
 
     """
