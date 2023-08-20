@@ -123,9 +123,6 @@ class GradientLift(GradientMethodBase):
         super().__init__(n_iterations, scene)
 
     def run(self) -> tuple[int | float, ...]:
-        """
-        eps_gradient: float = 0.00001
-        """
         for i in range(1, self._n_iterations + 1):
             current_gradient: np.ndarray = self._scene.field.gradient(*self._position)
 

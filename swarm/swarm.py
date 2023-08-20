@@ -253,13 +253,6 @@ class ParticleCorrupted(ParticleDecentralizedBase):
     def __init__(self, swarm: 'SwarmCorrupted'):
         super().__init__(swarm)
         self._swarm: SwarmCorrupted = swarm
-
-        """
-        scale = self._swarm.scene.hyperparameters.noise_scale
-        self._best_score += uniform(-np.linalg.norm(self._position - self._swarm.scene.answer.position),
-                                    np.linalg.norm(self._position - self._swarm.scene.answer.position)) * scale
-        """
-
         self._best_score += self._swarm.scene.noise.add_noise(self._position, self._swarm.scene.answer.position)
 
     def update(self):
@@ -267,12 +260,6 @@ class ParticleCorrupted(ParticleDecentralizedBase):
 
         current_score: float = self._swarm.scene.field.target_function(*list(self._position)) + \
             self._swarm.scene.noise.add_noise(self._position, self._swarm.scene.answer.position)
-
-        """
-        current_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1]) + \
-                               uniform(-np.linalg.norm(self._position - self._swarm.scene.answer.position),
-                                       np.linalg.norm(self._position - self._swarm.scene.answer.position)) * scale
-        """
 
         if current_score > self._best_score:
             self._best_score = current_score
@@ -353,10 +340,6 @@ class SwarmCentralized(SwarmBase):
 
         if self._scene.verbosity.value > 1:
             self.show_current_position("Начальное положение")
-        """
-        if self._scene.verbose > 0:
-            self.show_current_position("Начальное положение")
-        """
 
     def get_information_from_particle(self, particle: ParticleCentralized):
         if particle.best_score > self._best_global_score:
@@ -380,10 +363,6 @@ class SwarmCentralized(SwarmBase):
         self._best_global_position = new_position
 
     def show_current_position(self, title: str):
-        """
-        correctness_scale = self._scene.field.quality_scale
-        """
-
         coordinates: np.ndarray = self.get_swarm_positions()
 
         figure = pickle.load(open("./stored_field/field.pickle", "rb"))
@@ -425,20 +404,11 @@ class SwarmCentralized(SwarmBase):
 
         early_stopping_around_answer = False
 
-        """
-        eps_position = 0.0001
-        eps_velocity = 0.0001
-        """
-
         eps_position = self._scene.hyperparameters.early_stopping["around_point"]["epsilon"]
         ratio_position = self._scene.hyperparameters.early_stopping["around_point"]["ratio"]
 
         eps_velocity = self._scene.hyperparameters.early_stopping["velocity"]["epsilon"]
         ratio_velocity = self._scene.hyperparameters.early_stopping["velocity"]["ratio"]
-
-        """
-        ratio = 0.75
-        """
 
         for i in range(1, self._n_iterations + 1):
             for j in range(self._n_particles):
@@ -576,13 +546,6 @@ class SwarmDecentralized(SwarmDecentralizedBase):
 
         early_stopping_around_answer = False
 
-        """
-        eps_position = 0.0001
-        eps_velocity = 0.0001
-
-        ratio = 0.75
-        """
-
         eps_position = self._scene.hyperparameters.early_stopping["around_point"]["epsilon"]
         ratio_position = self._scene.hyperparameters.early_stopping["around_point"]["ratio"]
 
@@ -675,13 +638,6 @@ class SwarmCorrupted(SwarmDecentralizedBase):
         early_stopping_small_velocity = False
 
         early_stopping_around_answer = False
-
-        """
-        eps_position = 0.0001
-        eps_velocity = 0.0001
-
-        ratio = 0.75
-        """
 
         eps_position = self._scene.hyperparameters.early_stopping["around_point"]["epsilon"]
         ratio_position = self._scene.hyperparameters.early_stopping["around_point"]["ratio"]
