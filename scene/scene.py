@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.random import uniform, normal
+import click
 
 from field import field as fl
 from logger import custom_logger
@@ -305,6 +306,14 @@ class Scene:
         return result
 
 
+@click.command()
+@click.argument("config", type=click.Path(exists=True))
+def cli(config: click.Path(exists=True)):
+    my_scene: Scene = Scene(config)
+    result = my_scene.run()
+
+    print(result)
+
+
 if __name__ == "__main__":
-    my_scene = Scene("./confing_examples/gradient_lift.json")
-    results = my_scene.run()
+    cli()
