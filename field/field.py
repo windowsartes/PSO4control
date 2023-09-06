@@ -10,16 +10,15 @@ from matplotlib import pyplot as plt
 from matplotlib import colormaps as cm
 
 
-def gaussian(x: float, y: float, centre: tp.Optional[tuple[float, float]] = (5, 5),
-             sigma: tp.Optional[float] = 10) -> float:
+def gaussian(x: float, y: float, centre: tuple[float, float] = (5, 5), sigma: float = 10) -> float:
     x0: float = centre[0]
     y0: float = centre[1]
 
     return (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-((x - x0)**2 + (y - y0)**2)/(2*sigma))
 
 
-def gaussian_symbolic(x: sympy.Symbol, y: sympy.Symbol, centre: tp.Optional[tuple[float, float]] = (5, 5),
-                      sigma: tp.Optional[float] = 10) -> tp.Any:
+def gaussian_symbolic(x: sympy.Symbol, y: sympy.Symbol, centre: tuple[float, float] = (5, 5),
+                      sigma: float = 10) -> tp.Any:
     x0: float = centre[0]
     y0: float = centre[1]
 
@@ -35,12 +34,12 @@ class FieldInterface(ABC):
     sympy.Symbol, meanwhile sympy.exp is too slow, so it's very inefficient to use it during regular computing.
     """
     @abstractmethod
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @property
     @abstractmethod
-    def height(self):
+    def height(self) -> float:
         """
         This method will return field's height;
 
@@ -50,7 +49,7 @@ class FieldInterface(ABC):
 
     @property
     @abstractmethod
-    def width(self):
+    def width(self) -> float:
         """
         This method will return field's width;
 
@@ -60,11 +59,11 @@ class FieldInterface(ABC):
 
     @property
     @abstractmethod
-    def quality_scale(self):
+    def quality_scale(self) -> float:
         pass
 
     @abstractmethod
-    def target_function(self):
+    def target_function(self) -> tp.Callable[..., float]:
         """
         Returns field's target function so there is no need to call a class attribute outside the class;
 
@@ -73,7 +72,7 @@ class FieldInterface(ABC):
         pass
 
     @abstractmethod
-    def gradient(self, x: float, y: float):
+    def gradient(self, x: float, y: float) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         """
         Computes and returns field's gradient in the given point using symbolic version of a target function;
         Args:
@@ -94,7 +93,7 @@ class FieldInterface(ABC):
         pass
 
     @abstractmethod
-    def compute_and_save_field(self, path_to_file: tp.Optional[str]):
+    def compute_and_save_field(self, path_to_file: tp.Optional[str]) -> None:
         """
         Creates a grid and computes field's value at its every point, then saves this field as a pickle object by
         the given path;
@@ -107,18 +106,16 @@ class FieldInterface(ABC):
 
 class GaussianField(FieldInterface):
     def __init__(self, height: float, width: float, quality_scale: float,
-                 target_function: tp.Callable[[float, float, tp.Optional[tuple[float, float]],
-                                               tp.Optional[float]], float],
-                 target_function_symbolic: tp.Callable[[sympy.Symbol, sympy.Symbol, tp.Optional[tuple[float, float]],
-                                                        tp.Optional[float]], tp.Any]):
+                 target_function: tp.Callable[[float, float, tuple[float, float], float], float],
+                 target_function_symbolic: tp.Callable[[sympy.Symbol, sympy.Symbol, tuple[float, float],
+                                                        float], tp.Any]):
         self._height: float = height
         self._width: float = width
         self._quality_scale: float = quality_scale
-        self._target_function: tp.Callable[[float, float, tp.Optional[tuple[float, float]],
-                                            tp.Optional[float]], float] = target_function
+        self._target_function: tp.Callable[[float, float, tuple[float, float], float], float] = target_function
         self._f: tp.Callable[[sympy.Symbol, sympy.Symbol, tp.Optional[tuple[float, float]],
-                              tp.Optional[float]], tp.Any] = \
-            target_function_symbolic(sympy.Symbol('x'), sympy.Symbol('y'))
+                              float], tp.Any] = \
+            target_function_symbolic(sympy.Symbol('x'), sympy.Symbol('y'))  # type: ignore
         self._gradient = sympy.Matrix([self._f]).jacobian(sympy.Matrix([sympy.Symbol('x'), sympy.Symbol('y')]))
 
         self._hessian = sympy.hessian(self._f, [sympy.Symbol('x'), sympy.Symbol('y')])
@@ -132,18 +129,17 @@ class GaussianField(FieldInterface):
         return self._width
 
     @property
-    def quality_scale(self):
+    def quality_scale(self) -> float:
         return self._quality_scale
 
     @property
-    def target_function(self) -> tp.Callable[[float, float, tp.Optional[tuple[float, float]],
-                                              tp.Optional[float]], float]:
+    def target_function(self) -> tp.Callable[[float, float, tuple[float, float], float], float]:  # type: ignore
         return self._target_function
 
-    def gradient(self, x: float, y: float) -> np.ndarray:
+    def gradient(self, x: float, y: float) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         return np.array([float(value) for value in self._gradient.subs([('x', x), ('y', y)])])
 
-    def hessian(self, x: float, y: float) -> np.ndarray:
+    def hessian(self, x: float, y: float) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         """
         Computes and return you a hessian in given point as s (2,2)-matrix since it's 2d field;
         Args:
@@ -157,14 +153,17 @@ class GaussianField(FieldInterface):
 
     def show(self) -> None:
         # since width and height are round, ceil doesn't affect;
-        x_values: np.ndarray = np.linspace(0, self._width, ceil(self._width * self._quality_scale))
-        y_values: np.ndarray = np.linspace(0, self._height, ceil(self._height * self._quality_scale))
+        x_values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+            np.linspace(0, self._width, ceil(self._width * self._quality_scale))
+        y_values: np.ndarray[tp.Any, np.dtype[np.float64]]\
+            = np.linspace(0, self._height, ceil(self._height * self._quality_scale))
 
         x_grid, y_grid = np.meshgrid(x_values, y_values)
 
-        coordinates = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
+        coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
 
-        values = np.array([self._target_function(x, y) for x, y in coordinates])
+        values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+            np.array([self._target_function(x, y) for x, y in coordinates])  # type: ignore
 
         values = values.reshape((len(x_values), len(y_values)))
 
@@ -178,17 +177,19 @@ class GaussianField(FieldInterface):
 
         plt.show()
 
-    def compute_and_save_field(self, path_to_file: str = None) -> None:
+    def compute_and_save_field(self, path_to_file: str | None = None) -> None:
         fig, ax = plt.subplots()
 
-        x_values: np.ndarray = np.linspace(0, self._width, ceil(self._width * self._quality_scale))
-        y_values: np.ndarray = np.linspace(0, self._height, ceil(self._height * self._quality_scale))
+        x_values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+            np.linspace(0, self._width, ceil(self._width * self._quality_scale))
+        y_values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+            np.linspace(0, self._height, ceil(self._height * self._quality_scale))
 
         x_grid, y_grid = np.meshgrid(x_values, y_values)
 
-        coordinates = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
+        coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
 
-        values = np.array([self._target_function(x, y) for x, y in coordinates])
+        values = np.array([self._target_function(x, y) for x, y in coordinates])  # type: ignore
         values = values.reshape((len(x_values), len(y_values)))
         sns.heatmap(values, cmap=cm["hot"])
         plt.axis('off')
