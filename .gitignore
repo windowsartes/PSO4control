@@ -5,4 +5,5 @@
 build/
 __pycache__/
 logs/
-notebooks/.ipynb_checkpoints
+notebooks/
+.mypy_cache
