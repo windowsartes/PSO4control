@@ -300,7 +300,7 @@ class SwarmBase(SwarmInterface):
         self._particles: list[ParticleBase] = []
 
         if self._scene.verbosity.value > 0:
-            if not os.path.isfile("./stored_field/filed.pickle"):
+            if not os.path.isfile("./stored_field/field.pickle"):
                 self.scene.field.compute_and_save_field()
 
     def update_global_information(self) -> None:
