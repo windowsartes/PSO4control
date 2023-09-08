@@ -1,5 +1,3 @@
-import sys
-from time import sleep
 import os
 import typing as tp
 import pickle
@@ -17,11 +15,11 @@ from math import ceil
 
 class ParticleInterface(ABC):
     @abstractmethod
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @abstractmethod
-    def update(self):
+    def update(self) -> None:
         """
         One of the most import methods to implement; Used for update particle's position and velocity attributes;
 
@@ -31,7 +29,7 @@ class ParticleInterface(ABC):
 
     @property
     @abstractmethod
-    def best_score(self):
+    def best_score(self) -> float:
         """
         Returns best score that particle has achieved during training;
 
@@ -41,7 +39,7 @@ class ParticleInterface(ABC):
 
     @property
     @abstractmethod
-    def best_position(self):
+    def best_position(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         """
         Returns best position that particle has found during training;
 
@@ -51,7 +49,7 @@ class ParticleInterface(ABC):
 
     @property
     @abstractmethod
-    def position(self):
+    def position(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         """
         Returns particles current position;
 
@@ -61,7 +59,7 @@ class ParticleInterface(ABC):
 
     @position.setter
     @abstractmethod
-    def position(self, new_position: np.ndarray):
+    def position(self, new_position: np.ndarray[tp.Any, np.dtype[np.float64]]) -> None:
         """
         A positions setter; using it, you can properly change particle's position outside the class;
         Args:
@@ -73,12 +71,12 @@ class ParticleInterface(ABC):
 
     @property
     @abstractmethod
-    def path_length(self):
+    def path_length(self) -> float:
         pass
 
     @property
     @abstractmethod
-    def velocity(self):
+    def velocity(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         pass
 
 
@@ -89,49 +87,49 @@ class ParticleBase(ParticleInterface):
         field_width: float = self._swarm.scene.field.width
         field_height: float = self._swarm.scene.field.height
 
+        self._position: np.ndarray[tp.Any, np.dtype[np.float64]]
+        self._velocity: np.ndarray[tp.Any, np.dtype[np.float64]]
+
         if self._swarm.scene.spawn_type == "full_location":
-            self._position: np.ndarray = np.array([uniform(0, field_width), uniform(0, field_height)])
-            self._velocity: np.ndarray = np.array([uniform(-field_width, field_width),
-                                                   uniform(-field_height, field_height)])
+            self._position = np.array([uniform(0, field_width), uniform(0, field_height)])
+            self._velocity = np.array([uniform(-field_width, field_width), uniform(-field_height, field_height)])
         elif self._swarm.scene.spawn_type == "edges":
             edge: int = np.random.randint(4)
             if edge == 0:  # left
-                self._position: np.ndarray = np.array([0, uniform(0, field_height)])
-                self._velocity: np.ndarray = np.array([uniform(0, field_width), uniform(-field_height, field_height)])
+                self._position = np.array([0, uniform(0, field_height)])
+                self._velocity = np.array([uniform(0, field_width), uniform(-field_height, field_height)])
             elif edge == 1:  # right
-                self._position: np.ndarray = np.array([field_width, uniform(0, field_height)])
-                self._velocity: np.ndarray = np.array([uniform(-field_width, 0), uniform(-field_height, field_height)])
+                self._position = np.array([field_width, uniform(0, field_height)])
+                self._velocity = np.array([uniform(-field_width, 0), uniform(-field_height, field_height)])
             elif edge == 2:  # top
-                self._position: np.ndarray = np.array([uniform(0, field_width), 0])
-                self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(0, field_height)])
+                self._position = np.array([uniform(0, field_width), 0])
+                self._velocity = np.array([uniform(-field_width, field_width), uniform(0, field_height)])
             else:  # bottom
-                self._position: np.ndarray = np.array([uniform(0, field_width), field_height])
-                self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
+                self._position = np.array([uniform(0, field_width), field_height])
+                self._velocity = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
         elif self._swarm.scene.spawn_type == "small_area":
             factor: float = self._swarm.scene.hyperparameters.position_factor
-            start_location: np.ndarray = self._swarm.scene.spawn_start_location
+            start_location: np.ndarray[tp.Any, np.dtype[np.float64]] = self._swarm.scene.spawn_start_location
             if self._swarm.scene.edge == 0:  # left
-                self._position: np.ndarray = np.array([0, uniform(start_location[1] - field_height / factor,
-                                                                  start_location[1] + field_height / factor)])
-                self._velocity: np.ndarray = np.array([uniform(0, field_width),
-                                                       uniform(-field_height, field_height)])
+                self._position = np.array([0, uniform(start_location[1] - field_height / factor,
+                                                      start_location[1] + field_height / factor)])
+                self._velocity = np.array([uniform(0, field_width), uniform(-field_height, field_height)])
             elif self._swarm.scene.edge == 1:  # right
-                self._position: np.ndarray = np.array([field_width, uniform(start_location[1] - field_height / factor,
-                                                                            start_location[1] + field_height / factor)])
-                self._velocity: np.ndarray = np.array([uniform(-field_width, 0), uniform(-field_height, field_height)])
+                self._position = np.array([field_width, uniform(start_location[1] - field_height / factor,
+                                                                start_location[1] + field_height / factor)])
+                self._velocity = np.array([uniform(-field_width, 0), uniform(-field_height, field_height)])
             elif self._swarm.scene.edge == 2:  # top
-                self._position: np.ndarray = np.array([uniform(start_location[0] - field_width / factor,
-                                                               start_location[0] + field_width / factor), 0])
-                self._velocity: np.ndarray = np.array([uniform(-field_width, field_width),
-                                                       np.random.uniform(0, field_height)])
+                self._position = np.array([uniform(start_location[0] - field_width / factor,
+                                                   start_location[0] + field_width / factor), 0])
+                self._velocity = np.array([uniform(-field_width, field_width), np.random.uniform(0, field_height)])
             else:  # bottom
-                self._position: np.ndarray = np.array([uniform(start_location[0] - field_width / factor,
-                                                               start_location[0] + field_width / factor), field_height])
-                self._velocity: np.ndarray = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
+                self._position = np.array([uniform(start_location[0] - field_width / factor,
+                                                   start_location[0] + field_width / factor), field_height])
+                self._velocity = np.array([uniform(-field_width, field_width), uniform(-field_height, 0)])
 
         self._velocity /= self._swarm.scene.hyperparameters.velocity_factor
         self._best_score: float = self._swarm.scene.field.target_function(*list(self._position))
-        self._best_position: np.ndarray = self._position
+        self._best_position: np.ndarray[tp.Any, np.dtype[np.float64]] = self._position
 
         self._path_length: float = 0
 
@@ -140,15 +138,15 @@ class ParticleBase(ParticleInterface):
         return self._best_score
 
     @property
-    def best_position(self) -> np.ndarray:
+    def best_position(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         return self._best_position
 
     @property
-    def position(self) -> np.ndarray:
+    def position(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         return self._position
 
     @position.setter
-    def position(self, new_value: np.ndarray):
+    def position(self, new_value: np.ndarray[tp.Any, np.dtype[np.float64]]) -> None:
         self._position = new_value
         self._correct_position()
 
@@ -157,10 +155,10 @@ class ParticleBase(ParticleInterface):
         return self._path_length
 
     @property
-    def velocity(self):
+    def velocity(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         return self._velocity
 
-    def _correct_position(self):
+    def _correct_position(self) -> None:
         if self._position[0] < 0:
             self._position[0] = 0
         elif self._position[0] > self._swarm.scene.field.width:
@@ -175,19 +173,19 @@ class ParticleBase(ParticleInterface):
 class ParticleCentralized(ParticleBase):
     def __init__(self, swarm: 'SwarmCentralized'):
         super().__init__(swarm)
+        self._swarm: 'SwarmCentralized' = swarm
 
-    def update(self):
+    def update(self) -> None:
         r_personal: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_factor
         r_global: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_factor
 
         self._velocity = self._swarm.scene.hyperparameters.w * self._velocity + \
-                         self._swarm.scene.hyperparameters.c1 * r_personal * (self._best_position - self._position) + \
-                         self._swarm.scene.hyperparameters.c2 * r_global * (self._swarm.best_global_position -
-                                                                            self._position)
+            self._swarm.scene.hyperparameters.c1 * r_personal * (self._best_position - self._position) + \
+            self._swarm.scene.hyperparameters.c2 * r_global * (self._swarm.best_global_position - self._position)
 
         self.position = self._velocity + self._position
 
-        self._path_length += np.linalg.norm(self._velocity)
+        self._path_length += float(np.linalg.norm(self._velocity))
 
         current_score = self._swarm.scene.field.target_function(*list(self._position))
 
@@ -201,26 +199,26 @@ class ParticleCentralized(ParticleBase):
 
 
 class ParticleDecentralizedBase(ParticleBase):
-    def __init__(self, swarm: 'SwarmDecentralizedBase'):
+    def __init__(self, swarm: 'SwarmDecentralizedBase') -> None:
         super().__init__(swarm)
         self._swarm: SwarmDecentralizedBase = swarm
 
         self._best_global_score: float = float("-inf")
-        self._best_global_position: np.ndarray = self._best_position
+        self._best_global_position: np.ndarray[tp.Any, np.dtype[np.float64]] = self._best_position
 
-    def update(self):
+    def update(self) -> None:
         r_personal: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_factor
         r_global: float = np.random.uniform()/self._swarm.scene.hyperparameters.velocity_factor
 
         self._velocity = self._swarm.scene.hyperparameters.w * self._velocity + \
-                         self._swarm.scene.hyperparameters.c1 * r_personal * (self._best_position - self._position) + \
-                         self._swarm.scene.hyperparameters.c2 * r_global * (self._best_global_position - self._position)
+            self._swarm.scene.hyperparameters.c1 * r_personal * (self._best_position - self._position) + \
+            self._swarm.scene.hyperparameters.c2 * r_global * (self._best_global_position - self._position)
 
         self.position = self._velocity + self._position
 
-        self._path_length += np.linalg.norm(self._velocity)
+        self._path_length += float(np.linalg.norm(self._velocity))
 
-    def update_my_global_information(self):
+    def update_my_global_information(self) -> None:
         """
         This method is used when decentralized particle want's to update its global information: best found score ant
         its position. Note that only particle, that located close enough to target particle can share information;
@@ -240,7 +238,7 @@ class ParticleDecentralized(ParticleDecentralizedBase):
         super().__init__(swarm)
         self._swarm: SwarmDecentralized = swarm
 
-    def update(self):
+    def update(self) -> None:
         super().update()
 
         current_score: float = self._swarm.scene.field.target_function(self._position[0], self._position[1])
@@ -255,7 +253,7 @@ class ParticleCorrupted(ParticleDecentralizedBase):
         self._swarm: SwarmCorrupted = swarm
         self._best_score += self._swarm.scene.noise.add_noise(self._position, self._swarm.scene.answer.position)
 
-    def update(self):
+    def update(self) -> None:
         super().update()
 
         current_score: float = self._swarm.scene.field.target_function(*list(self._position)) + \
@@ -268,11 +266,11 @@ class ParticleCorrupted(ParticleDecentralizedBase):
 
 class SwarmInterface(ABC):
     @abstractmethod
-    def __init__(self, n_particles: int, n_iterations: int, scene) -> None:
+    def __init__(self, n_particles: int, n_iterations: int, scene) -> None:  # type: ignore
         pass
 
     @abstractmethod
-    def get_swarm_positions(self) -> np.ndarray:
+    def get_swarm_positions(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         pass
 
     @abstractmethod
@@ -284,19 +282,19 @@ class SwarmInterface(ABC):
         pass
 
     @abstractmethod
-    def update_global_information(self):
+    def update_global_information(self) -> None:
         pass
 
 
 class SwarmBase(SwarmInterface):
-    def __init__(self, n_particles: int, n_iterations: int, scene):
+    def __init__(self, n_particles: int, n_iterations: int, scene):  # type: ignore
         self._n_particles: int = n_particles
         self._n_iterations: int = n_iterations
 
         self._scene = scene
 
         self._best_global_score: float = float("-inf")
-        self._best_global_position: np.ndarray = np.array([0., 0.])
+        self._best_global_position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array([0., 0.])
 
         self._particles: list[ParticleBase] = []
 
@@ -304,33 +302,33 @@ class SwarmBase(SwarmInterface):
             if not os.path.isfile("./stored_field/filed.pickle"):
                 self.scene.field.compute_and_save_field()
 
-    def update_global_information(self):
+    def update_global_information(self) -> None:
         for particle in self._particles:
             if self._best_global_score < particle.best_score:
                 self._best_global_score = particle.best_score
                 self._best_global_position = particle.best_position
 
-    def get_swarm_positions(self) -> np.ndarray:
-        positions: np.ndarray = np.empty((self._n_particles, 2), dtype=np.double)
+    def get_swarm_positions(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
+        positions: np.ndarray[tp.Any, np.dtype[np.float64]] = np.empty((self._n_particles, 2), dtype=np.double)
         for index, particle in enumerate(self._particles):
             positions[index] = particle.position
 
         return positions
 
     @property
-    def scene(self):
+    def scene(self):  # type: ignore
         return self._scene
 
     @property
-    def particles(self):
+    def particles(self) -> list[ParticleBase]:
         return self._particles
 
 
 class SwarmCentralized(SwarmBase):
-    def __init__(self, n_particles: int, n_iterations, scene):
+    def __init__(self, n_particles: int, n_iterations: int, scene):  # type: ignore
         super().__init__(n_particles, n_iterations, scene)
 
-        self._particles: list[ParticleCentralized] = []
+        self._particles: list[ParticleCentralized] = []  # type: ignore
         for i in range(self._n_particles):
             self._particles.append(ParticleCentralized(self))
 
@@ -341,29 +339,29 @@ class SwarmCentralized(SwarmBase):
         if self._scene.verbosity.value > 1:
             self.show_current_position("Начальное положение")
 
-    def get_information_from_particle(self, particle: ParticleCentralized):
+    def get_information_from_particle(self, particle: ParticleCentralized) -> None:
         if particle.best_score > self._best_global_score:
             self._best_global_score = particle.best_score
             self._best_global_position = particle.best_position
 
     @property
-    def best_global_score(self):
+    def best_global_score(self) -> float:
         return self._best_global_score
 
     @best_global_score.setter
-    def best_global_score(self, new_value: float):
+    def best_global_score(self, new_value: float) -> None:
         self._best_global_score = new_value
 
     @property
-    def best_global_position(self) -> np.ndarray:
+    def best_global_position(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         return self._best_global_position
 
     @best_global_position.setter
-    def best_global_position(self, new_position: np.ndarray):
+    def best_global_position(self, new_position: np.ndarray[tp.Any, np.dtype[np.float64]]) -> None:
         self._best_global_position = new_position
 
-    def show_current_position(self, title: str):
-        coordinates: np.ndarray = self.get_swarm_positions()
+    def show_current_position(self, title: str) -> None:
+        coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
 
         figure = pickle.load(open("./stored_field/field.pickle", "rb"))
         ax = plt.gca()
@@ -465,13 +463,13 @@ class SwarmCentralized(SwarmBase):
 
 
 class SwarmDecentralizedBase(SwarmBase):
-    def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):
+    def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):  # type: ignore
         super().__init__(n_particles, n_iterations, scene)
 
         self.connection_radius = connection_radius
 
-    def show_current_position(self, title: str):
-        coordinates: np.ndarray = self.get_swarm_positions()
+    def show_current_position(self, title: str) -> None:
+        coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
 
         figure = pickle.load(open("./stored_field/field.pickle", "rb"))
         ax = plt.gca()
@@ -512,13 +510,13 @@ class SwarmDecentralizedBase(SwarmBase):
         plt.pause(2.)
         plt.close(figure)
 
-    def get_best_global_score(self, update=True) -> float:
+    def get_best_global_score(self, update: bool = True) -> float:
         if update:
             self.update_global_information()
 
         return self._best_global_score
 
-    def get_best_global_position(self, update=True) -> np.ndarray:
+    def get_best_global_position(self, update: bool = True) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         if update:
             self.update_global_information()
 
@@ -526,10 +524,10 @@ class SwarmDecentralizedBase(SwarmBase):
 
 
 class SwarmDecentralized(SwarmDecentralizedBase):
-    def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):
+    def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):  # type: ignore
         super().__init__(n_particles, n_iterations, connection_radius, scene)
 
-        self._particles: list[ParticleDecentralized] = []
+        self._particles: list[ParticleDecentralized] = []  # type: ignore
         for i in range(self._n_particles):
             self._particles.append(ParticleDecentralized(self))
 
@@ -611,12 +609,12 @@ class SwarmDecentralized(SwarmDecentralizedBase):
 
 
 class SwarmCorrupted(SwarmDecentralizedBase):
-    def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene):
+    def __init__(self, n_particles: int, n_iterations: int, connection_radius: float, scene) -> None:  # type: ignore
         super().__init__(n_particles, n_iterations, connection_radius, scene)
 
         self.connection_radius = connection_radius
 
-        self._particles: list[ParticleCorrupted] = []
+        self._particles: list[ParticleCorrupted] = []  # type: ignore
         for i in range(self._n_particles):
             self._particles.append(ParticleCorrupted(self))
 
@@ -627,7 +625,7 @@ class SwarmCorrupted(SwarmDecentralizedBase):
         if self._scene.verbosity.value > 1:
             self.show_current_position("Начальное положение")
 
-    def update_global_information(self):
+    def update_global_information(self) -> None:
         for particle in self._particles:
             if self._best_global_score < self.scene.field.target_function(*particle.best_position):
                 self._best_global_score = self.scene.field.target_function(*particle.best_position)
