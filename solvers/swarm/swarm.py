@@ -362,6 +362,10 @@ class SwarmCentralized(SwarmBase):
         self._best_global_position = new_position
 
     def show_current_position(self, title: str) -> None:
+        backend = matplotlib.get_backend()
+        if backend == "agg":
+            return
+
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
 
         figure = pickle.load(open("./stored_field/field.pickle", "rb"))
@@ -369,7 +373,6 @@ class SwarmCentralized(SwarmBase):
 
         x, y = 100, 100
 
-        backend = matplotlib.get_backend()
         if backend == 'TkAgg':
             figure.canvas.manager.window.wm_geometry(f"+{x}+{y}")
         elif backend == 'WXAgg':
