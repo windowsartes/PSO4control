@@ -14,7 +14,7 @@
 Partcile swarm optimization is a numerical optimization method that does not require knowing the exact gradient of the function being optimized. It is inspired by the behavior of real biological systems, such as flocks of birds. All of a sudden, it's very rare used in the context of control theory - so my goal was to explore its applicability for the control of a group of modile robots.
 During this research, I've tryed different configuration of robots (so-called "swarm"): they can be totally connected to each other or have limited range of connection. Also robot's sensors can be broken so its measurement can be corrupted by some noise.
 
-In the case you want to learn about the result, you can read my report in Russian.
+In the case you want to learn about the result, you can read my [report](./report.pdf) in Russian.
 
 ## Install and run
 
