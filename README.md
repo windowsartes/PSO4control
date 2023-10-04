@@ -33,7 +33,7 @@ pip install .
 After that, you will be able to use the cli:
 
 ```bash
-python ./scene/scene.py path_to_your_config_file
+python .src/scene/scene.py path_to_your_config_file
 ```
 
 Config file is a json-file, where you specify everything about current scene: the field, algorithm type and its hyperparameters, etc. You can find some examples in the [there](./config_examples), also I'll provide you a proper guide how to create this config file properly.
