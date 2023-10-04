@@ -1,17 +1,16 @@
 import os
 import typing as tp
 import pickle
-
-import numpy as np
-from matplotlib import pyplot as plt
-import matplotlib.patches as mpatches
-from numpy.random import uniform
-import matplotlib
-from solvers.solver_interface import SolverInterface
-
 from abc import ABC, abstractmethod
-
 from math import ceil
+
+import matplotlib
+import numpy as np
+import matplotlib.patches as mpatches
+from matplotlib import pyplot as plt
+from numpy.random import uniform
+
+from src.solvers.solver_interface import SolverInterface
 
 
 class ParticleInterface(ABC):
