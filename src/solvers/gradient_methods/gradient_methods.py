@@ -1,14 +1,13 @@
-import numpy as np
-from numpy.random import uniform
-
 import pickle
-
-import matplotlib
-from matplotlib import pyplot as plt
+import typing as tp
 from abc import ABC, abstractmethod
 
-import typing as tp
-from solvers.solver_interface import SolverInterface
+import matplotlib
+import numpy as np
+from matplotlib import pyplot as plt
+from numpy.random import uniform
+
+from src.solvers.solver_interface import SolverInterface
 
 
 class GradientMethodInterface(SolverInterface):

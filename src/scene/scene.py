@@ -1,17 +1,17 @@
 import json
-from dataclasses import dataclass
 import typing as tp
+from abc import ABC
+from dataclasses import dataclass
 
+import click
 import numpy as np
 from numpy.random import uniform, normal
-import click
-from abc import ABC
 
-import solvers.solver_interface
-from field import field as fl
-from solvers.swarm import swarm as sw
+import src.solvers.solver_interface
+from src.field import field as fl
+from src.solvers.swarm import swarm as sw
+from src.solvers.gradient_methods import gradient_methods
 
-from solvers.gradient_methods import gradient_methods
 
 # cause making a json from function isn't trivial, I've used these mappings from str to function object
 function_name2object = {"gaussian": fl.gaussian}
