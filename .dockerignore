@@ -8,4 +8,3 @@ logs/
 notebooks/
 .mypy_cache
 ./parsing
-./requirements.txt
