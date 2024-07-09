@@ -5,9 +5,10 @@ from abc import ABC, abstractmethod
 from math import ceil
 
 import matplotlib
-import numpy as np
+matplotlib.use('TKAgg')
+import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib import pyplot as plt
+import numpy as np
 from numpy.random import uniform
 
 from src.solvers.solver_interface import SolverInterface
@@ -362,8 +363,9 @@ class SwarmCentralized(SwarmBase):
 
     def show_current_position(self, title: str) -> None:
         backend = matplotlib.get_backend()
-        if backend == "agg":
-            return
+        # if backend == "agg":
+            # print('agg backend')
+            # return
 
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
 
