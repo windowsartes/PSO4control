@@ -19,18 +19,18 @@ class SympyPoint:
 TARGET_FUNCTION_REGISTER: dict[str, tp.Callable[[Point, tp.Any], float]] = {}
 
 def target_function(
-    cls: tp.Callable[[Point, tp.Any], float]
+    function: tp.Callable[[Point, tp.Any], float]
 ) -> tp.Callable[[Point, tp.Any], float]:
-    TARGET_FUNCTION_REGISTER[cls.__name__] = cls
-    return cls
+    TARGET_FUNCTION_REGISTER[function.__name__] = function
+    return function
 
 TARGET_FUNCTION_SYMBOLIC_REGISTER: dict[str, tp.Callable[[SympyPoint, tp.Any], sympy.Expr]] = {}
 
 def target_function_symbolic(
-    cls: tp.Callable[[SympyPoint, tp.Any], tp.Any],
+    function: tp.Callable[[SympyPoint, tp.Any], tp.Any],
 ) -> tp.Callable[[SympyPoint, tp.Any], sympy.Expr]:
-    TARGET_FUNCTION_SYMBOLIC_REGISTER[cls.__name__] = cls
-    return cls
+    TARGET_FUNCTION_SYMBOLIC_REGISTER[function.__name__[:-9]] = function
+    return function
 
 @target_function
 def gaussian(
