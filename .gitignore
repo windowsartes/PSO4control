@@ -1,10 +1,14 @@
 .venv/
 .idea
 .python-version
+.mypy_cache
+
 *.egg-info/
 build/
 __pycache__/
+
 logs/
 notebooks/
-.mypy_cache
+
+./logger
 ./parsing
