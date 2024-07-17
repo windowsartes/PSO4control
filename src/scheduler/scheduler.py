@@ -25,6 +25,7 @@ def scheduler_hyperparameters(cls: tp.Type[SchedulerHyperparameters]) -> tp.Type
     SCHEDULER_HYPERPARAMETERS_REGISTER[cls.__name__[:-15]] = cls
     return cls
 
+
 @scheduler_hyperparameters
 class StepSchedulerHyperparameters(SchedulerHyperparameters):
     step_size: int
@@ -37,8 +38,6 @@ class StepScheduler(SchedulerInteface):
 
         self._hyperparameters: StepSchedulerHyperparameters = hyperparameters
         self._current_step: int = 0
-
-        print(self._hyperparameters.step_size)
 
     def step(self, w: float):
         self._current_step+=1
