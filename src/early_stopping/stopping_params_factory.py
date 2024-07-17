@@ -7,7 +7,6 @@ from src.early_stopping.stopping_params import STOPPING_PARAMS_REGISTER
 
 class StoppingParamsFactory:
     def construct(self, params_config) -> tp.Type[BaseModel]:
-        print(params_config["type"])
         return STOPPING_PARAMS_REGISTER[params_config["type"]](**params_config["params"])
 
 
@@ -28,5 +27,3 @@ config = {
 }
 
 p = f.construct(config)
-
-print(p)
