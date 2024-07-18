@@ -164,7 +164,6 @@ class Particle:
 
         self._velocity /= velocity_factor
 
-        # self._best_score: float = self._swarm.scene.field.target_function(*list(self._position))
         self._best_score: float = 0.
         self._best_position: np.ndarray[tp.Any, np.dtype[np.float64]] = self._position
 
@@ -206,7 +205,10 @@ class Particle:
         return self._best_position
 
     @best_position.setter
-    def position(self, new_value: np.ndarray[tp.Any, np.dtype[np.float64]]) -> None:
+    def position(
+        self,
+        new_value: np.ndarray[tp.Any, np.dtype[np.float64]],
+    ) -> None:
         self._best_position = new_value
 
     @property
@@ -214,7 +216,10 @@ class Particle:
         return self._position
 
     @position.setter
-    def position(self, new_value: np.ndarray[tp.Any, np.dtype[np.float64]]) -> None:
+    def position(
+        self,
+        new_value: np.ndarray[tp.Any, np.dtype[np.float64]],
+    ) -> None:
         self._position = new_value
 
     @property
@@ -230,5 +235,8 @@ class Particle:
         return self._w
 
     @w.setter
-    def w(self, new_value: float) -> None:
+    def w(
+        self,
+        new_value: float,
+    ) -> None:
         self._w = new_value
