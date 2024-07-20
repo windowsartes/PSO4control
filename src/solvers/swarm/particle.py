@@ -15,8 +15,7 @@ class Particle:
     """
     def __init__(
         self,
-        field_height: float,
-        field_width: float,
+        field_size: float,
         spawn_type: str,
         position_factor: float,
         velocity_factor: float,
@@ -32,14 +31,14 @@ class Particle:
         if spawn_type == "full_location":
             self._position = np.array(
                 [
-                    np.random.uniform(0, field_width),
-                    np.random.uniform(0, field_height),
+                    np.random.uniform(0, field_size),
+                    np.random.uniform(0, field_size),
                 ]
             )
             self._velocity = np.array(
                 [
-                    np.random.uniform(-field_width, field_width),
-                    np.random.uniform(-field_height, field_height),
+                    np.random.uniform(-field_size, field_size),
+                    np.random.uniform(-field_size, field_size),
                 ]
             )
         elif spawn_type == "edges":
@@ -48,52 +47,52 @@ class Particle:
                 self._position = np.array(
                     [
                         0.,
-                        np.random.uniform(0, field_height),
+                        np.random.uniform(0, field_size),
                     ]
                 )
                 self._velocity = np.array(
                     [
-                        np.random.uniform(0, field_width),
-                        np.random.uniform(-field_height, field_height),
+                        np.random.uniform(0, field_size),
+                        np.random.uniform(-field_size, field_size),
                     ]
                 )
             elif edge_number == 1:  # right
                 self._position = np.array(
                     [
-                        field_width,
-                        np.random.uniform(0, field_height),
+                        field_size,
+                        np.random.uniform(0, field_size),
                     ]
                 )
                 self._velocity = np.array(
                     [
-                        np.random.uniform(-field_width, 0),
-                        np.random.uniform(-field_height, field_height),
+                        np.random.uniform(-field_size, 0),
+                        np.random.uniform(-field_size, field_size),
                     ]
                 )
             elif edge_number == 2:  # top
                 self._position = np.array(
                     [
-                        np.random.uniform(0, field_width),
+                        np.random.uniform(0, field_size),
                         0,
                     ]
                 )
                 self._velocity = np.array(
                     [
-                        np.random.uniform(-field_width, field_width),
-                        np.random.uniform(0, field_height),
+                        np.random.uniform(-field_size, field_size),
+                        np.random.uniform(0, field_size),
                     ]
                 )
             else:  # bottom
                 self._position = np.array(
                     [
-                        np.random.uniform(0, field_width),
-                        field_height,
+                        np.random.uniform(0, field_size),
+                        field_size,
                     ]
                 )
                 self._velocity = np.array(
                     [
-                        np.random.uniform(-field_width, field_width),
-                        np.random.uniform(-field_height, 0),
+                        np.random.uniform(-field_size, field_size),
+                        np.random.uniform(-field_size, 0),
                     ]
                 )
         elif spawn_type == "small_area":
@@ -102,63 +101,63 @@ class Particle:
                     [
                         0,
                         np.random.uniform(
-                            spawn_start_location[1] - field_height / position_factor,
-                            spawn_start_location[1] + field_height / position_factor,
+                            spawn_start_location[1] - field_size / position_factor,
+                            spawn_start_location[1] + field_size / position_factor,
                         )
                     ]
                 )
                 self._velocity = np.array(
                     [
-                        np.random.uniform(0, field_width),
-                        np.random.uniform(-field_height, field_height),
+                        np.random.uniform(0, field_size),
+                        np.random.uniform(-field_size, field_size),
                     ]
                 )
             elif spawn_edge == 1:  # right
                 self._position = np.array(
                     [
-                        field_width,
+                        field_size,
                         np.random.uniform(
-                            spawn_start_location[1] - field_height / position_factor,
-                            spawn_start_location[1] + field_height / position_factor,
+                            spawn_start_location[1] - field_size / position_factor,
+                            spawn_start_location[1] + field_size / position_factor,
                         )
                     ]
                 )
                 self._velocity = np.array(
                     [
-                        np.random.uniform(-field_width, 0),
-                        np.random.uniform(-field_height, field_height),
+                        np.random.uniform(-field_size, 0),
+                        np.random.uniform(-field_size, field_size),
                     ]
                 )
             elif spawn_edge == 2:  # top
                 self._position = np.array(
                     [
                         np.random.uniform(
-                            spawn_start_location[0] - field_width / position_factor,
-                            spawn_start_location[0] + field_width / position_factor
+                            spawn_start_location[0] - field_size / position_factor,
+                            spawn_start_location[0] + field_size / position_factor
                         ),
                         0,
                     ]
                 )
                 self._velocity = np.array(
                     [
-                        np.random.uniform(-field_width, field_width),
-                        np.random.uniform(0, field_height),
+                        np.random.uniform(-field_size, field_size),
+                        np.random.uniform(0, field_size),
                     ]
                 )
             else:  # bottom
                 self._position = np.array(
                     [
                         np.random.uniform(
-                            spawn_start_location[0] - field_width / position_factor,
-                            spawn_start_location[0] + field_width / position_factor
+                            spawn_start_location[0] - field_size / position_factor,
+                            spawn_start_location[0] + field_size / position_factor
                         ),
-                        field_height,
+                        field_size,
                     ]
                 )
                 self._velocity = np.array(
                     [
-                        np.random.uniform(-field_width, field_width),
-                        np.random.uniform(-field_height, 0),
+                        np.random.uniform(-field_size, field_size),
+                        np.random.uniform(-field_size, 0),
                     ]
                 )
 
