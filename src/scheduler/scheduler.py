@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
+from src.scheduler import scheduler_params
+
 
 class SchedulerInteface(ABC):
     @abstractmethod
@@ -12,31 +14,16 @@ class SchedulerInteface(ABC):
 SCHEDULER_REGISTER: dict[str, tp.Type[SchedulerInteface]] = {}
 
 def scheduler(cls: tp.Type[SchedulerInteface]) -> tp.Type[SchedulerInteface]:
-    SCHEDULER_REGISTER[cls.__name__] = cls
+    SCHEDULER_REGISTER[cls.__name__[:-9].lower()] = cls
     return cls
 
-
-class SchedulerHyperparameters(BaseModel):
-    pass
-
-SCHEDULER_HYPERPARAMETERS_REGISTER: dict[str, tp.Type[SchedulerHyperparameters]] = {}
-
-def scheduler_hyperparameters(cls: tp.Type[SchedulerHyperparameters]) -> tp.Type[SchedulerHyperparameters]:
-    SCHEDULER_HYPERPARAMETERS_REGISTER[cls.__name__[:-15]] = cls
-    return cls
-
-
-@scheduler_hyperparameters
-class StepSchedulerHyperparameters(SchedulerHyperparameters):
-    step_size: int
-    gamma: float
 
 @scheduler
 class StepScheduler(SchedulerInteface):
-    def __init__(self, hyperparameters: StepSchedulerHyperparameters):
+    def __init__(self, hyperparameters: scheduler_params.StepSchedulerParams):
         super().__init__()
 
-        self._hyperparameters: StepSchedulerHyperparameters = hyperparameters
+        self._hyperparameters: scheduler_params.StepSchedulerParams = hyperparameters
         self._current_step: int = 0
 
     def step(self, w: float):

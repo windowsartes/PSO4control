@@ -1,17 +1,16 @@
 import typing as tp
 
-from src.scheduler.scheduler import (
-    SCHEDULER_HYPERPARAMETERS_REGISTER,
-    SCHEDULER_REGISTER,
-    SchedulerInteface,
-    SchedulerHyperparameters
-)
+from pydantic import BaseModel
+
+from src.scheduler.scheduler import SCHEDULER_REGISTER, SchedulerInteface
+from src.scheduler.scheduler_params_factory import SchedulerParamsFactory
 
 
 class SchedulerFactory:
-    def construct(self, scheduler_config) -> tp.Type[SchedulerInteface]:
-        params: tp.Type[SchedulerHyperparameters] = \
-            SCHEDULER_HYPERPARAMETERS_REGISTER[scheduler_config["type"]](**scheduler_config["params"])
-        scheduler: tp.Type[SchedulerInteface] = SCHEDULER_REGISTER[scheduler_config["type"]](params)
+    _params_factory: SchedulerParamsFactory = SchedulerParamsFactory()
+
+    def construct(self, config) -> tp.Type[SchedulerInteface]:
+        params: tp.Type[BaseModel] = self._params_factory.construct(config)
+        scheduler: tp.Type[SchedulerInteface] = SCHEDULER_REGISTER[config["type"].lower()](params)
 
         return scheduler

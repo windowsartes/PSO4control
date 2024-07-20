@@ -3,11 +3,12 @@ from src.field.target_function import TARGET_FUNCTION_REGISTER, TARGET_FUNCTION_
 
 
 class FieldFactory:
-    def construct(self, field_config) -> Field:
+    @staticmethod
+    def construct(config) -> Field:
         field: Field = Field(
-            FieldParameters(**field_config["params"]),
-            TARGET_FUNCTION_REGISTER[field_config["type"].lower()],
-            TARGET_FUNCTION_SYMBOLIC_REGISTER[field_config["type"].lower()],
+            FieldParameters(**config["params"]),
+            TARGET_FUNCTION_REGISTER[config["type"].lower()],
+            TARGET_FUNCTION_SYMBOLIC_REGISTER[config["type"].lower()],
         )
 
         return field

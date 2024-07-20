@@ -53,7 +53,7 @@ class NoiseBase(NoiseInterface):
 NOISE_REGISTER: dict[str, tp.Type[NoiseBase]] = {}
 
 def noise(cls: tp.Type[NoiseBase]) -> tp.Type[NoiseBase]:
-    NOISE_REGISTER[cls.__name__[:-5]] = cls
+    NOISE_REGISTER[cls.__name__[:-5].lower()] = cls
     return cls
 
 @noise

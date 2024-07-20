@@ -7,10 +7,9 @@ from src.early_stopping.checker import EARLY_STOP_CHECKER_REGISTER, EarlyStopChe
 
 
 class EarlyStopCheckerFactory:
-    def __init__(self):
-        self._params_factory: StoppingParamsFactory = StoppingParamsFactory()
+    _params_factory: StoppingParamsFactory = StoppingParamsFactory()
 
-    def construct(self, params_config) -> tp.Type[EarlyStopCheckerInterface]:
-        checker_params: tp.Type[BaseModel] = self._params_factory.construct(params_config)
+    def construct(self, config) -> tp.Type[EarlyStopCheckerInterface]:
+        checker_params: tp.Type[BaseModel] = self._params_factory.construct(config)
         
-        return EARLY_STOP_CHECKER_REGISTER[params_config["type"]](checker_params)
+        return EARLY_STOP_CHECKER_REGISTER[config["type"].lower()](checker_params)

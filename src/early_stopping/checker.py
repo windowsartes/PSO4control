@@ -19,7 +19,7 @@ EARLY_STOP_CHECKER_REGISTER: dict[str, BaseModel] = {}
 def checker(
     cls: tp.Type[EarlyStopCheckerInterface],
 ) -> tp.Type[EarlyStopCheckerInterface]:
-    EARLY_STOP_CHECKER_REGISTER[cls.__name__[:-16]] = cls
+    EARLY_STOP_CHECKER_REGISTER[cls.__name__[:-16].lower()] = cls
     return cls
 
 

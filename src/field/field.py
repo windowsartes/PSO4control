@@ -18,6 +18,7 @@ class FieldParameters(BaseModel):
     size: float
     quality_scale: float
 
+
 class FieldInterface(ABC):
     @property
     @abstractmethod
@@ -63,6 +64,7 @@ class FieldInterface(ABC):
         path_to_file: str | pathlib.Path,
     ) -> None:
         pass
+
 
 class Field(FieldInterface):
     def __init__(
