@@ -16,4 +16,4 @@ class SolverFactory:
     ) -> tp.Type[SwarmBase]:
         params: tp.Type[SwarmCentralizedParams] = self._params_factory.construct(config)
 
-        return SOLVER_REGISTER[config["specification"]](params, field_size, field_quality_scale)
+        return SOLVER_REGISTER[config["specification"].lower()](params, field_size, field_quality_scale)

@@ -5,4 +5,4 @@ from src.solvers.swarm.swarm_params import SOLVER_PARAMS_REGISTER, SwarmCentrali
 
 class SolverParamsFactory:
     def construct(self, config) -> tp.Type[SwarmCentralizedParams]:
-        return SOLVER_PARAMS_REGISTER[config["specification"]](**config["params"])
+        return SOLVER_PARAMS_REGISTER[config["specification"].lower()](**config["params"])
