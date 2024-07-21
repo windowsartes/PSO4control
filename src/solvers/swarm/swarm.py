@@ -12,6 +12,7 @@ import numpy as np
 
 # from src.solvers.solver_interface import SolverInterface
 from src.solvers.swarm.particle import Particle
+from src.solvers.swarm import swarm_params
 
 
 class SwarmInterface:
@@ -57,48 +58,49 @@ class SwarmBase(SwarmInterface):
 
     def correct_positions(
         self,
-        size: float,
+        field_size: float,
     ) -> None:
         for i in range(len(self._particles)):  
             self._particles[i].position[0] = max(self._particles[i].position[0], 0)
-            self._particles[i].position[0] = min(self._particles[i].position[0], size)
+            self._particles[i].position[0] = min(self._particles[i].position[0], field_size)
 
             self._particles[i].position[1] = max(self._particles[i].position[1], 0)
-            self._particles[i].position[1] = min(self._particles[i].position[1], size)
+            self._particles[i].position[1] = min(self._particles[i].position[1], field_size)
 
 
+SOLVER_REGISTER: dict[str, SwarmBase] = {}
+
+def solver(
+    cls: tp.Type[SwarmBase],
+) -> tp.Type[SwarmBase]:
+    SOLVER_REGISTER[cls.__name__[5:].lower()] = cls
+    return cls
+
+
+@solver
 class SwarmCentralized(SwarmBase):
     def __init__(
         self,
-        n_particles: int,
-        field_size,
-        spawn_type: str,
-        position_factor: float,
-        velocity_factor: float,
-        w: float,
-        c1: float,
-        c2: float,
-        spawn_start_location: np.ndarray[tp.Any, np.dtype[np.float64]] = np.ones((2)),
-        spawn_edge: int = 1,
+        params: swarm_params.SwarmCentralizedParams,
+        field_size: float,
+        field_quality_scale: float,
     ):
+        spawn_edge: int = np.random.randint(4)
         self._particles: list[Particle] = []
-        for i in range(n_particles):
+        for i in range(params.n_particles):
             self._particles.append(
                 Particle(
                     field_size,
-                    spawn_type,
-                    position_factor,
-                    velocity_factor,
-                    w,
-                    c1,
-                    c2,
-                    spawn_start_location,
-                    spawn_edge,
+                    params.spawn,
+                    params.coefficients,
                 )
             )
 
         self._best_global_score: float = 0.
         self._best_global_position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.empty((2))
+
+        self._field_size: float = field_size
+        self._field_quality_scale: float = field_quality_scale
 
     def update_scores(
         self,
@@ -115,7 +117,7 @@ class SwarmCentralized(SwarmBase):
 
     def turn(self):
         for i in range(len(self._particles)):
-            self._particles[i].move(self._best_global_position)
+            self._particles[i].move(self._best_global_position, self._field_size)
 
     def show(self, title: str):
         backend = matplotlib.get_backend()
@@ -133,27 +135,25 @@ class SwarmCentralized(SwarmBase):
         elif backend == 'WXAgg':
             figure.canvas.manager.window.SetPosition((x, y))
 
-        quality_scale = 100
-
         ax.scatter(
-            coordinates[:, 0] * quality_scale,
-            coordinates[:, 1] * quality_scale,
+            coordinates[:, 0] * self._field_quality_scale,
+            coordinates[:, 1] * self._field_quality_scale,
             marker='o',
             color='b',
             ls='',
             s=40,
         )
 
-        ax.set_xlim(0, 10 * quality_scale)
-        ax.set_ylim(0, 10 * quality_scale)
+        ax.set_xlim(0, self._field_size * self._field_quality_scale)
+        ax.set_ylim(0, self._field_size * self._field_quality_scale)
         ax.set_title(title)
 
         for index, label in enumerate(np.arange(len(coordinates))):
             ax.annotate(
                 label,
                 (
-                    coordinates[index][0] * quality_scale,
-                    coordinates[index][1] * quality_scale,
+                    coordinates[index][0] * self._field_quality_scale,
+                    coordinates[index][1] * self._field_quality_scale,
                 ),
                 fontsize=10,
             )
@@ -161,51 +161,41 @@ class SwarmCentralized(SwarmBase):
         plt.draw()
         plt.gcf().canvas.flush_events()
 
-        plt.pause(2.)
+        plt.pause(2.5)
         plt.close(figure)
 
 
+@solver
 class SwarmDecentralized(SwarmBase):
     def __init__(
         self,
-        n_particles: int,
+        params: swarm_params.SwarmDecentralizedParams,
         field_size: float,
-        spawn_type: str,
-        position_factor: float,
-        velocity_factor: float,
-        w: float,
-        c1: float,
-        c2: float,
-        spawn_start_location: np.ndarray[tp.Any, np.dtype[np.float64]] = np.ones((2)),
-        spawn_edge: int = 1,
-        connection_radius: float = 0.5,
+        field_quality_scale: float,
     ):
         self._particles: list[Particle] = []
-        for i in range(n_particles):
+        for i in range(params.n_particles):
             self._particles.append(
                 Particle(
                     field_size,
-                    spawn_type,
-                    position_factor,
-                    velocity_factor,
-                    w,
-                    c1,
-                    c2,
-                    spawn_start_location,
-                    spawn_edge,
+                    params.spawn,
+                    params.coefficients,
                 )
             )
 
-        self._connection_radius = connection_radius
+        self._best_global_scores: list[float] = [0.0] * params.n_particles
+        self._best_global_positions: list[np.ndarray[tp.Any, np.dtype[np.float64]]] = \
+            [np.empty((2))] * params.n_particles
 
-        self._best_global_scores: list[float] = [0.0] * n_particles
-        self._best_global_positions: list[np.ndarray[tp.Any, np.dtype[np.float64]]] = [np.empty((2))] * n_particles
+        self._field_size: float = field_size
+        self._field_quality_scale: float = field_quality_scale
+
+        self._connection_radius: float = params.connection_radius
 
     def update_scores(
         self,
         particles_scores: list[float],
     ) -> None:
-        field_size: float = 10.0
         for i in range(len(self._particles)):
             if particles_scores[i] > self._particles[i].best_score:
                 self._particles[i].best_score = particles_scores[i]
@@ -214,14 +204,14 @@ class SwarmDecentralized(SwarmBase):
         for i in range(len(self._particles)):
             for j in range(len(self._particles)):
                 if np.linalg.norm(self._particles[i].position - self._particles[j].position) < \
-                    self._connection_radius * field_size:
+                    self._connection_radius * self._field_size:
                     if self._best_global_scores[i] < self._particles[j].best_score:
                         self._best_global_scores[i] = self._particles[j].best_score
                         self._best_global_positions[i] = self._particles[j].best_position
 
     def turn(self):
         for i in range(len(self._particles)):
-            self._particles[i].move(self._best_global_positions[i])
+            self._particles[i].move(self._best_global_positions[i], self._field_size)
 
     def show(self, title: str):
         backend = matplotlib.get_backend()
@@ -239,36 +229,33 @@ class SwarmDecentralized(SwarmBase):
         elif backend == 'WXAgg':
             figure.canvas.manager.window.SetPosition((x, y))
 
-        quality_scale = 100
-        field_size: float = 10.0
-
         ax.scatter(
-            coordinates[:, 0] * quality_scale,
-            coordinates[:, 1] * quality_scale,
+            coordinates[:, 0] * self._field_quality_scale,
+            coordinates[:, 1] * self._field_quality_scale,
             marker='o',
             color='b',
             ls='',
             s=40,
         )
 
-        ax.set_xlim(0, 10 * quality_scale)
-        ax.set_ylim(0, 10 * quality_scale)
+        ax.set_xlim(0, 10 * self._field_quality_scale)
+        ax.set_ylim(0, 10 * self._field_quality_scale)
         ax.set_title(title)
 
         for index, label in enumerate(np.arange(len(coordinates))):
             ax.annotate(
                 label,
                 (
-                    coordinates[index][0] * quality_scale,
-                    coordinates[index][1] * quality_scale,
+                    coordinates[index][0] * self._field_quality_scale,
+                    coordinates[index][1] * self._field_quality_scale,
                 ),
                 fontsize=10,
             )
 
         for coordinate in coordinates:
             circle = mpatches.Circle(
-                coordinate * quality_scale,
-                self._connection_radius * field_size * quality_scale,
+                coordinate * self._field_quality_scale,
+                self._connection_radius * self._field_size * self._field_quality_scale,
                 color="g",
                 fill=False,
                 linestyle="--",
@@ -278,5 +265,5 @@ class SwarmDecentralized(SwarmBase):
         plt.draw()
         plt.gcf().canvas.flush_events()
 
-        plt.pause(2.)
+        plt.pause(2.5)
         plt.close(figure)
