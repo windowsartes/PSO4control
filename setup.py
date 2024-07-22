@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pso4control",
-    version="1.3.0",
+    version="2.0.1",
     description="Lil package for studying applicability of PSO in control theory",
     author="Nikolai Makarov",
     author_email="makarov.nikolai20@gmail.com",
@@ -14,8 +14,5 @@ setup(
         "seaborn==0.12.2",
         "sympy==1.12",
         "matplotlib==3.7.1",
-    ],
-    extras_requires={
-        "log_parsing": ["jupyter", "pandas==2.0.2"]
-    },
+    ]
 )
