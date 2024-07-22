@@ -1,325 +1,137 @@
 import json
+import pathlib
 import typing as tp
-from abc import ABC
-from dataclasses import dataclass
 
 import click
 import numpy as np
-from numpy.random import uniform, normal
 
-import src.solvers.solver_interface
-from src.field import field as fl
-from src.solvers.swarm import swarm as sw
-from src.solvers.gradient_methods import gradient_methods
-
-
-# cause making a json from function isn't trivial, I've used these mappings from str to function object
-function_name2object = {"gaussian": fl.gaussian}
-symbolic_function_name2object = {"gaussian": fl.gaussian_symbolic}
-
-
-class InertiaScheduler:
-    def __init__(self, step_size: int, gamma: float, scene: 'Scene'):
-        self._step_size: int = step_size
-        self._gamma: float = gamma
-        self._steps: int = 0
-        self._scene: Scene = scene
-
-    def step(self) -> None:
-        self._steps += 1
-        if self._steps % self._step_size == 0:
-            if isinstance(self._scene.hyperparameters, HyperparametersCentralizedSwarm):
-                self._scene.hyperparameters.w = self._scene.hyperparameters.w * self._gamma
-            else:
-                raise ValueError("There is an error during initialization: your 'hyperparameters' field"
-                                 "must be 'HyperparametersCentralizedSwarm' instance or its heir")
-
-
-@dataclass()
-class Verbosity:
-    _value: float
-    _show_period: int
-
-    @property
-    def value(self) -> float:
-        return self._value
-
-    @property
-    def show_period(self) -> float:
-        return self._show_period
-
-
-@dataclass()
-class HyperparametersInterface(ABC):
-    pass
-
-
-@dataclass()
-class HyperparametersCentralizedSwarm(HyperparametersInterface):
-    _w: float
-    _c1: float
-    _c2: float
-
-    _velocity_factor: float
-
-    _early_stopping: dict[str, dict[str, float]]
-
-    _verbosity: Verbosity
-
-    _position_factor: float
-
-    @property
-    def w(self) -> float:
-        return self._w
-
-    @w.setter
-    def w(self, new_value: float) -> None:
-        self._w = new_value
-
-    @property
-    def c1(self) -> float:
-        return self._c1
-
-    @property
-    def c2(self) -> float:
-        return self._c2
-
-    @property
-    def velocity_factor(self) -> float:
-        return self._velocity_factor
-
-    @property
-    def early_stopping(self) -> dict[str, dict[str, float]]:
-        return self._early_stopping
-
-    @property
-    def verbosity(self) -> Verbosity:
-        return self._verbosity
-
-    @property
-    def position_factor(self) -> float:
-        return self._position_factor
-
-
-@dataclass()
-class HyperparametersDecentralizedSwarm(HyperparametersCentralizedSwarm):
-    _connection_radius: float
-
-    @property
-    def connection_radius(self) -> float:
-        return self._connection_radius
-
-
-@dataclass()
-class HyperparametersCorruptedSwarm(HyperparametersDecentralizedSwarm):
-    _noise: dict[str, str | float]
-
-    @property
-    def noise(self) -> dict[str, str | float]:
-        return self._noise
-
-
-@dataclass()
-class HyperparametersGradientMethod(HyperparametersInterface):
-    _velocity_factor: float
-    _verbosity: Verbosity
-    _early_stopping_epsilon: float
-
-    @property
-    def velocity_factor(self) -> float:
-        return self._velocity_factor
-
-    @property
-    def verbosity(self) -> Verbosity:
-        return self._verbosity
-
-    @property
-    def early_stopping_epsilon(self) -> float:
-        return self._early_stopping_epsilon
-
-
-class Answer:
-    def __init__(self, position: np.ndarray[tp.Any, np.dtype[np.float64]], target_function: str) -> None:
-        self._position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array(position)
-        self._value: float = function_name2object[target_function](*position)
-
-    @property
-    def position(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
-        return self._position
-
-    @property
-    def value(self) -> float:
-        return self._value
-
-
-@dataclass()
-class Noise:
-    _noise_type: str
-    _noise_scale: float
-
-    def add_noise(self, particle_position: np.ndarray[tp.Any, np.dtype[np.float64]],
-                  answer_position: np.ndarray[tp.Any, np.dtype[np.float64]])\
-            -> np.ndarray[tp.Any, np.dtype[np.float64]]:
-        if self._noise_type == "normal":
-            return normal(0, np.linalg.norm(particle_position - answer_position)) * self._noise_scale
-        elif self._noise_type == "uniform":
-            return uniform(-np.linalg.norm(particle_position - answer_position),
-                           np.linalg.norm(particle_position - answer_position)) * self._noise_scale
-
-        raise ValueError("Please, check the 'noise type' field at your config;")
+from src.answer.answer import Answer
+from src.early_stopping.checker import EarlyStopCheckerInterface
+from src.early_stopping.checker_factory import EarlyStopCheckerFactory
+from src.field.field import FieldInterface
+from src.field.field_factory import FieldFactory
+from src.noise.noise import NoiseBase
+from src.noise.noise_factory import NoiseFactory
+from src.scheduler.scheduler import SchedulerInteface
+from src.scheduler.scheduler_factory import SchedulerFactory
+from src.solvers.gradient import gradient
+from src.solvers.swarm import swarm
+from src.solvers.solver_interface import SolverInterface
+from src.solvers.solver_factory import SolverFactory
+from src.verbosity.verbosity import Verbosity
 
 
 class Scene:
-    def __init__(self, path_to_config: str):
-        with open(path_to_config, "r") as config_file:
-            config = json.load(config_file)
-            self.config = config
+    _early_stop_checker_factory: EarlyStopCheckerFactory = EarlyStopCheckerFactory()
+    _field_factory: FieldFactory = FieldFactory()
+    _scheduler_factory: SchedulerFactory = SchedulerFactory()
+    _noise_factory: NoiseFactory = NoiseFactory()
+    _solver_factory: SolverFactory = SolverFactory()
 
-        self.answer: Answer = Answer(position=config["answer"],
-                                     target_function=config["field"]["target_function"])
+    def __init__(
+        self,
+        path_to_config: str,   
+    ):
+        with open(path_to_config, "r") as f:
+            config = json.load(f)
 
-        if config["field"]["target_function"] == "gaussian":
-            self.field: fl.FieldInterface = \
-                fl.GaussianField(height=config["field"]["height"],
-                                 width=config["field"]["width"],
-                                 quality_scale=config["field"]["quality_scale"],
-                                 target_function=function_name2object[config["field"]["target_function"]],
-                                 target_function_symbolic=symbolic_function_name2object[config["field"]
-                                 ["target_function"]])
-        else:
-            raise ValueError("Please, check your 'target_function'; It must be present in the 'function_name2object'")
+        self._answer: Answer = Answer(**config["answer"])
 
-        if config["solver"]["type"] == "swarm":
-            self.inertia_scheduler: InertiaScheduler = \
-                InertiaScheduler(step_size=config["solver"]["hyperparams"]["inertia_scheduler"]["step_size"],
-                                 gamma=config["solver"]["hyperparams"]["inertia_scheduler"]["gamma"],
-                                 scene=self)
+        self._early_stop_checker: tp.Type[EarlyStopCheckerInterface] = \
+            self._early_stop_checker_factory.construct(config["early_stopping"])
 
-            self.verbosity: Verbosity = Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                                  _show_period=config["solver"]["verbosity"]["show_period"])
+        self._field:  tp.Type[FieldInterface] = self._field_factory.construct(config["field"])
+        field_dump_dir: pathlib.Path = pathlib.Path("./stored_field")
+        field_dump_dir.mkdir(parents=True, exist_ok=True)
+        self._field.compute_and_save_field(f"{str(field_dump_dir)}/field.pickle")
 
-            self.spawn_type: str = config["solver"]["spawn_type"]
-            if self.spawn_type == "small_area":
-                self.edge: int = np.random.randint(4)
-                position_factor: float = config["solver"]["hyperparams"]["position_factor"]
-                self.spawn_start_location: np.ndarray[tp.Any, np.dtype[np.float64]]
-                if self.edge == 0:  # left
-                    self.spawn_start_location = np.array([0, uniform(self.field.height / position_factor,
-                                                          self.field.height - self.field.height / position_factor)])
-                elif self.edge == 1:  # right
-                    self.spawn_start_location = np.array([self.field.width, uniform(self.field.height / position_factor,
-                                                          self.field.height - self.field.height / position_factor)])
-                elif self.edge == 2:  # top
-                    self.spawn_start_location = np.array([uniform(self.field.width / position_factor,
-                                                          self.field.width - self.field.width / position_factor), 0])
-                elif self.edge == 3:  # bottom
-                    self.spawn_start_location = np.array([uniform(self.field.width / position_factor,
-                                                          self.field.width - self.field.width / position_factor),
-                                                          self.field.height])
-            self.hyperparameters: HyperparametersInterface
-            self.solver: solvers.solver_interface.SolverInterface
-            if config["solver"]["specification"] == "centralized":
-                self.hyperparameters = \
-                    HyperparametersCentralizedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
-                                                    _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
-                                                    _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
-                                                    _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
-                                                    _verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                                                         _show_period=config["solver"]["verbosity"][
-                                                                             "show_period"]),
-                                                    _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
-                                                    _position_factor=config["solver"]["hyperparams"]["position_factor"])
-                self.solver = \
-                    sw.SwarmCentralized(n_particles=config["solver"]["hyperparams"]["n_particles"],
-                                        n_iterations=config["solver"]["hyperparams"]["n_iterations"],
-                                        scene=self)
-            elif config["solver"]["specification"] == "decentralized":
-                self.hyperparameters = \
-                    HyperparametersDecentralizedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
-                                                      _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
-                                                      _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
-                                                      _velocity_factor=config["solver"]["hyperparams"]
-                                                      ["velocity_factor"],
-                                                      _verbosity=Verbosity(_value=config["solver"]["verbosity"]
-                                                      ["value"], _show_period=config["solver"]["verbosity"][
-                                                                    "show_period"]),
-                                                      _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
-                                                      _connection_radius=config["solver"]["hyperparams"]
-                                                      ["connection_radius"],
-                                                      _position_factor=config["solver"]["hyperparams"]
-                                                      ["position_factor"])
-                self.solver =\
-                    sw.SwarmDecentralized(n_particles=config["solver"]["hyperparams"]["n_particles"],
-                                          n_iterations=config["solver"]["hyperparams"]["n_iterations"],
-                                          connection_radius=config["solver"]["hyperparams"]["connection_radius"],
-                                          scene=self)
-            elif config["solver"]["specification"] == "corrupted":
-                self.hyperparameters = \
-                    HyperparametersCorruptedSwarm(_w=config["solver"]["hyperparams"]["coefficients"]["w"],
-                                                  _c1=config["solver"]["hyperparams"]["coefficients"]["c1"],
-                                                  _c2=config["solver"]["hyperparams"]["coefficients"]["c2"],
-                                                  _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
-                                                  _verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                                                       _show_period=config["solver"]["verbosity"][
-                                                                           "show_period"]),
-                                                  _early_stopping=config["solver"]["hyperparams"]["early_stopping"],
-                                                  _connection_radius=config["solver"]["hyperparams"]
-                                                  ["connection_radius"],
-                                                  _noise=config["solver"]["noise"],
-                                                  _position_factor=config["solver"]["hyperparams"]["position_factor"])
-                self.noise: Noise = Noise(_noise_type=config["solver"]["noise"]["type"],
-                                          _noise_scale=config["solver"]["noise"]["scale"])
-                self.solver = \
-                    sw.SwarmCorrupted(n_particles=config["solver"]["hyperparams"]["n_particles"],
-                                      n_iterations=config["solver"]["hyperparams"]["n_iterations"],
-                                      connection_radius=config["solver"]["hyperparams"]["connection_radius"],
-                                      scene=self)
-            else:
-                raise ValueError("Please, check your swarm solver's specification;")
-        elif config["solver"]["type"] == "gradient":
-            self.verbosity = Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                       _show_period=config["solver"]["verbosity"]["show_period"])
-            if config["solver"]["specification"] == "lift":
-                self.hyperparameters = \
-                    HyperparametersGradientMethod(_verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                                                       _show_period=config["solver"]["verbosity"][
-                                                                           "show_period"]),
-                                                  _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
-                                                  _early_stopping_epsilon=config["solver"]["hyperparams"]
-                                                  ["early_stopping_epsilon"])
-                self.solver = gradient_methods.GradientLift(
-                    n_iterations=config["solver"]["hyperparams"]["n_iterations"],
-                    scene=self)
-            elif config["solver"]["specification"] == "newton":
-                self.hyperparameters = \
-                    HyperparametersGradientMethod(_verbosity=Verbosity(_value=config["solver"]["verbosity"]["value"],
-                                                                       _show_period=config["solver"]["verbosity"][
-                                                                           "show_period"]),
-                                                  _velocity_factor=config["solver"]["hyperparams"]["velocity_factor"],
-                                                  _early_stopping_epsilon=config["solver"]["hyperparams"]
-                                                  ["early_stopping_epsilon"])
-                self.solver = gradient_methods.NewtonMethod(
-                    n_iterations=config["solver"]["hyperparams"]["n_iterations"],
-                    scene=self)
-            else:
-                raise ValueError("Please, check your solver's specification - it must be either 'lift' or 'newton'")
-        else:
-            raise ValueError("Please, check your solver's type: it must be either 'swarm' or 'gradient';")
+        self._noise: tp.Optional[tp.Type[NoiseBase]] = \
+            self._noise_factory.construct(self._answer, config["noise"]) if "noise" in config else None
+        
+        self._scheduler: tp.Optional[tp.Type[SchedulerInteface]] = \
+            self._scheduler_factory.construct(config["scheduler"]) if "scheduler" in config else None 
+        
+        self._verbosity: Verbosity = Verbosity(**config["verbosity"])
 
-    def run(self) -> tuple[int | float, ...]:
-        result = self.solver.run()
+        self._solver: tp.Type[SolverInterface] = \
+            self._solver_factory.construct(config["solver"], self._field.size, self._field.quality_scale)
 
-        return result
+        if isinstance(self._solver, swarm.SwarmBase):
+            self._solver.correct_positions(self._field.size)
 
+            particles_positions: np.ndarray[tp.Any, np.dtype[np.float64]] = self._solver.get_swarm_positions()
 
-@click.command()
-@click.argument("config", type=click.Path(exists=True))
-def cli(config: click.Path(exists=True)) -> None:  # type: ignore
-    my_scene: Scene = Scene(config)
-    result = my_scene.run()
+            particles_scores: list[float] = [
+                self._field.target_function(*particles_positions[i, :]) for i in range(particles_positions.shape[0])
+            ]
 
-    print(result)
+            if self._noise is not None:
+                particles_scores = [
+                    particles_scores[i] + self._noise.get_noise(particles_positions[i, :])
+                    for i in range(len(particles_scores))
+                ]
 
+            self._solver.update_scores(particles_scores)
 
-if __name__ == "__main__":
-    cli()
+        if self._verbosity.value > 0:
+            self._solver.show("Starting position")
+
+    def solve(self):
+        if isinstance(self._solver, swarm.SwarmBase):
+            for i in range(1, 1001):
+                self._solver.turn()
+                self._solver.correct_positions(self._field.size)
+            
+                particles_positions: np.ndarray[tp.Any, np.dtype[np.float64]] = self._solver.get_swarm_positions()
+
+                particles_scores: list[float] = [
+                    self._field.target_function(*particles_positions[j, :]) for j in range(particles_positions.shape[0])
+                ]
+            
+                if self._noise is not None:
+                    particles_scores = [
+                        particles_scores[j] + self._noise.get_noise(particles_positions[j, :])
+                        for j in range(len(particles_scores))
+                    ]
+
+                self._solver.update_scores(particles_scores)
+
+                if self._early_stop_checker.check(self._solver.particles):
+                    self._solver.show("Final Position")
+                    return
+
+                if self._scheduler is not None:
+                    w: float = self._solver.particles[0].w
+                    w = self._scheduler.step(w)
+
+                    for j in range(len(self._solver.particles)):
+                        self._solver.particles[j].w = w
+
+                if self._verbosity.value > 1:
+                    if i % self._verbosity.period == 0:
+                        self._solver.show(f"Epoch #{i}")
+            
+            self._solver.show("Final Position")
+
+        if isinstance(self._solver, gradient.GradientLift):
+            for i in range(1, 1001):
+                self._solver.turn(self._field.gradient(*self._solver.position))
+
+                if self._verbosity.value > 1:
+                    if i % self._verbosity.period == 0:
+                        self._solver.show(f"Epoch #{i}")
+
+            self._solver.show("Final Position")
+
+        if isinstance(self._solver, gradient.NewtonsMethod):
+            for i in range(1, 1001):
+                self._solver.turn(
+                    self._field.gradient(*self._solver.position),
+                    self._field.hessian(*self._solver.position),
+                )
+
+                if self._verbosity.value > 1:
+                    if i % self._verbosity.period == 0:
+                        self._solver.show(f"Epoch #{i}")
+
+            self._solver.show("Final Position")
