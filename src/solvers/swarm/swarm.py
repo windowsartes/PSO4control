@@ -10,12 +10,12 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
-# from src.solvers.solver_interface import SolverInterface
+from src.solvers.solver_interface import SolverInterface
 from src.solvers.swarm.particle import Particle
 from src.solvers.swarm import swarm_params
 
 
-class SwarmInterface:
+class SwarmInterface(SolverInterface):
     @abstractmethod
     def update_scores(
         self,
