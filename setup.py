@@ -10,9 +10,10 @@ setup(
     packages=find_packages(),
     install_requires=[
         "click==8.1.7",
-        "numpy==1.24.3",
-        "seaborn==0.12.2",
-        "sympy==1.12",
-        "matplotlib==3.7.1",
+        "matplotlib==3.9.1",
+        "numpy==2.0.1",
+        "pydantic==2.8.2",
+        "seaborn==0.13.2",
+        "sympy==1.13.1",
     ]
 )
