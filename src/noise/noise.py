@@ -36,12 +36,12 @@ class NoiseBase(NoiseInterface):
     ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         closest_answer: np.ndarray[tp.Any, np.dtype[np.float64]] = \
             np.array([self._answer.answers[0].x, self._answer.answers[0].y])
-        closest_distance: float = np.linalg.norm(particle_position - closest_answer)
+        closest_distance: float = float(np.linalg.norm(particle_position - closest_answer))
 
         for i in range(1, len(self._answer.answers)):
             current_answer: np.ndarray[tp.Any, np.dtype[np.float64]] = \
                 np.array([self._answer.answers[i].x, self._answer.answers[i].y])
-            current_distance: float = np.linalg.norm(particle_position - current_answer)
+            current_distance: float = float(np.linalg.norm(particle_position - current_answer))
 
             if current_distance < closest_distance:
                 closest_distance = current_distance
@@ -70,7 +70,8 @@ class GaussianNoise(NoiseBase):
         return np.random.normal(
             0,
             np.linalg.norm(particle_position - closest_answer),
-        ) * self._params.scale + self._params.loc
+            size = 1,
+        )[0] * self._params.scale + self._params.loc
 
 
 @noise
@@ -85,4 +86,5 @@ class UniformNoise(NoiseBase):
         return np.random.uniform(
             -np.linalg.norm(particle_position - closest_answer),
             np.linalg.norm(particle_position - closest_answer),
-        ) * self._params.scale + self._params.loc
+            size = 1,
+        )[0] * self._params.scale + self._params.loc
