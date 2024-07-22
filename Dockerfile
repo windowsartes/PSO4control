@@ -1,9 +1,13 @@
 FROM python:3.10
 
-WORKDIR /pso_workdir
+WORKDIR /app
 
 COPY . .
 
-RUN pip3 install .
+RUN apt-get update -y
+RUN apt-get install -y libx11-dev
+RUN apt-get install -y python3-tk
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -e .
 
-CMD ["/bin/bash"]
+CMD ["python", "./main.py", "./config.json"]

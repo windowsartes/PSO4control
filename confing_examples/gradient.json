@@ -1,0 +1,72 @@
+{
+    "scheduler":
+    {
+        "type": "Step",
+        "params":
+        {
+            "gamma": 0.75,
+            "step_size": 50
+        }
+    },
+    "field":
+    {
+        "type": "Gaussian",
+        "params":
+        {
+            "size": 10.0,
+            "quality_scale": 100.0
+        }
+    },
+    "verbosity":
+    {
+        "value": 2,
+        "period": 100
+    },
+    "answer":
+    {
+        "answers":
+        [
+            {
+                "x": 5.0,
+                "y": 5.0,
+                "value": 0.039894
+            }
+        ]
+    },
+    "early_stopping":
+    {
+        "type": "Swarm",
+        "params":
+        {
+            "coordinate":
+            {
+                "epsilon": 0.0001,
+                "ratio": 0.75
+            },
+            "velocity":
+            {
+                "epsilon": 0.0001,
+                "ratio": 0.75
+            }
+        }
+    },
+    "noise":
+    {
+        "type": "Gaussian",
+        "params":
+        {
+            "loc": 0.0,
+            "scale": 0.000125
+        }
+    },
+    "solver":
+    {
+        "type": "gradient",
+        "specification": "gradientlift",
+        "params":
+        {
+            "n_iterations": 1000, 
+            "velocity_factor": 50.0
+        }
+    }
+}
