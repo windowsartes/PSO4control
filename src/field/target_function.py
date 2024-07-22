@@ -1,8 +1,8 @@
 import typing as tp
+from dataclasses import dataclass
 
 import numpy as np
 import sympy
-from dataclasses import dataclass
 
 
 @dataclass
