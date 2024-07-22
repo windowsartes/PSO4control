@@ -29,6 +29,7 @@ class SympyPoint:
 
 TARGET_FUNCTION_SYMBOLIC_REGISTER: dict[str, tp.Callable[[SympyPoint, tp.Any], sympy.Expr]] = {}
 
+
 def target_function_symbolic(
     function: tp.Callable[[SympyPoint, tp.Any], tp.Any],
 ) -> tp.Callable[[SympyPoint, tp.Any], sympy.Expr]:

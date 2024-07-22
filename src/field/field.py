@@ -76,7 +76,7 @@ class Field(FieldInterface):
         self._parameters: FieldParameters = parameters
         self._target_function: tp.Callable[[tf.Point, tp.Any], float] = target_function
         self._target_function_symbolic: tp.Callable[[tf.SympyPoint, tp.Any], sympy.Expr] = \
-            target_function_symbolic(tf.SympyPoint(sympy.Symbol('x'), sympy.Symbol('y'))) 
+            target_function_symbolic(tf.SympyPoint(sympy.Symbol('x'), sympy.Symbol('y')))
         self._gradient: sympy.Expr = sympy.Matrix([self._target_function_symbolic]).jacobian(
             sympy.Matrix([sympy.Symbol('x'), sympy.Symbol('y')])
         )
