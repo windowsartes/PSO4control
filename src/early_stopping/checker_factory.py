@@ -11,5 +11,5 @@ class EarlyStopCheckerFactory:
 
     def construct(self, config) -> tp.Type[EarlyStopCheckerInterface]:
         checker_params: tp.Type[BaseModel] = self._params_factory.construct(config)
-        
+
         return EARLY_STOP_CHECKER_REGISTER[config["type"].lower()](checker_params)

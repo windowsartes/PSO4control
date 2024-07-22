@@ -16,6 +16,7 @@ class EarlyStopCheckerInterface(ABC):
 
 EARLY_STOP_CHECKER_REGISTER: dict[str, BaseModel] = {}
 
+
 def checker(
     cls: tp.Type[EarlyStopCheckerInterface],
 ) -> tp.Type[EarlyStopCheckerInterface]:
@@ -59,12 +60,12 @@ class SwarmEarlyStopChecker(EarlyStopCheckerInterface):
         particles: list[Particle],
     ) -> bool:
         small_velocity_points_count: int = 0
-    
+
         for i in range(len(particles)):
             if np.linalg.norm(particles[i].velocity) < self._params.velocity.epsilon:
                 small_velocity_points_count += 1
 
             if small_velocity_points_count > self._params.velocity.ratio * len(particles):
                 return True
-        
+
         return False
