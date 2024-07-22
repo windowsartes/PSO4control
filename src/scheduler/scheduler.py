@@ -1,8 +1,6 @@
 import typing as tp
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel
-
 from src.scheduler import scheduler_params
 
 
@@ -11,7 +9,9 @@ class SchedulerInteface(ABC):
     def step(self, *args, **kwargs):
         pass
 
+
 SCHEDULER_REGISTER: dict[str, tp.Type[SchedulerInteface]] = {}
+
 
 def scheduler(cls: tp.Type[SchedulerInteface]) -> tp.Type[SchedulerInteface]:
     SCHEDULER_REGISTER[cls.__name__[:-9].lower()] = cls
@@ -27,8 +27,8 @@ class StepScheduler(SchedulerInteface):
         self._current_step: int = 0
 
     def step(self, w: float):
-        self._current_step+=1
-        
+        self._current_step += 1
+
         if self._current_step % self._hyperparameters.step_size == 0:
             self._current_step = 0
             return w * self._hyperparameters.gamma
