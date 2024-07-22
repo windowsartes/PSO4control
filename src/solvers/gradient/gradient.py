@@ -1,14 +1,14 @@
 import pickle
 import typing as tp
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 import matplotlib
-matplotlib.use('TKAgg')
 import numpy as np
-from matplotlib import pyplot as plt
 
 from src.solvers.solver_interface import SolverInterface
 from src.solvers.gradient import gradient_params
+
+matplotlib.use('TKAgg')
 
 
 class GradientMethodInterface(SolverInterface):
@@ -93,7 +93,7 @@ class GradientMethodBase(GradientMethodInterface):
     ) -> None:
         with open("./stored_field/field.pickle", "rb") as f:
             figure = pickle.load(f)
-        ax = plt.gca()
+        ax = matplotlib.pyplot.gca()
 
         x, y = 100, 100
 
@@ -116,14 +116,15 @@ class GradientMethodBase(GradientMethodInterface):
         ax.set_ylim(0, self._field_size * self._field_quality_scale)
         ax.set_title(title)
 
-        plt.draw()
-        plt.gcf().canvas.flush_events()
+        matplotlib.pyplot.draw()
+        matplotlib.pyplot.gcf().canvas.flush_events()
 
-        plt.pause(2.5)
-        plt.close(figure)
+        matplotlib.pyplot.pause(2.5)
+        matplotlib.pyplot.close(figure)
 
 
 SOLVER_REGISTER: dict[str, tp.Type[GradientMethodBase]] = {}
+
 
 def solver(
     cls: tp.Type[GradientMethodBase],
@@ -155,6 +156,7 @@ class GradientLift(GradientMethodBase):
 
         self._position = self._position + self._velocity
         self._path_length += float(np.linalg.norm(self._velocity))
+
 
 @solver
 class NewtonsMethod(GradientMethodBase):

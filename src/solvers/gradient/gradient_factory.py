@@ -14,6 +14,6 @@ class SolverFactory:
         field_size: float,
         field_quality_scale: float,
     ) -> tp.Type[GradientMethodBase]:
-        params: tp.Type[GradientMethodBase] = self._params_factory.construct(config)
+        params: tp.Type[GradientParams] = self._params_factory.construct(config)
 
         return SOLVER_REGISTER[config["specification"].lower()](params, field_size, field_quality_scale)
