@@ -11,12 +11,12 @@ class Point:
     y: float
 
 
-TARGET_FUNCTION_REGISTER: dict[str, tp.Callable[[Point, tp.Any], float]] = {}
+TARGET_FUNCTION_REGISTER: dict[str, tp.Callable[[Point], float]] = {}
 
 
 def target_function(
-    function: tp.Callable[[Point, tp.Any], float]
-) -> tp.Callable[[Point, tp.Any], float]:
+    function: tp.Callable[[Point], float]
+) -> tp.Callable[[Point], float]:
     TARGET_FUNCTION_REGISTER[function.__name__.lower()] = function
     return function
 
@@ -27,12 +27,12 @@ class SympyPoint:
     y: sympy.Symbol
 
 
-TARGET_FUNCTION_SYMBOLIC_REGISTER: dict[str, tp.Callable[[SympyPoint, tp.Any], sympy.Expr]] = {}
+TARGET_FUNCTION_SYMBOLIC_REGISTER: dict[str, tp.Callable[[SympyPoint], sympy.Expr]] = {}
 
 
 def target_function_symbolic(
-    function: tp.Callable[[SympyPoint, tp.Any], tp.Any],
-) -> tp.Callable[[SympyPoint, tp.Any], sympy.Expr]:
+    function: tp.Callable[[SympyPoint], sympy.Expr],
+) -> tp.Callable[[SympyPoint], sympy.Expr]:
     TARGET_FUNCTION_SYMBOLIC_REGISTER[function.__name__[:-9]] = function
     return function
 

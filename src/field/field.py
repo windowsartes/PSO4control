@@ -70,12 +70,12 @@ class Field(FieldInterface):
     def __init__(
         self,
         parameters: FieldParameters,
-        target_function: tp.Callable[[tf.Point, tp.Any], float],
-        target_function_symbolic: tp.Callable[[tf.SympyPoint, tp.Any], sympy.Expr],
+        target_function: tp.Callable[[tf.Point], float],
+        target_function_symbolic: tp.Callable[[tf.SympyPoint], sympy.Expr],
     ):
         self._parameters: FieldParameters = parameters
-        self._target_function: tp.Callable[[tf.Point, tp.Any], float] = target_function
-        self._target_function_symbolic: tp.Callable[[tf.SympyPoint, tp.Any], sympy.Expr] = \
+        self._target_function: tp.Callable[[tf.Point], float] = target_function
+        self._target_function_symbolic: sympy.Expr = \
             target_function_symbolic(tf.SympyPoint(sympy.Symbol('x'), sympy.Symbol('y')))
         self._gradient: sympy.Expr = sympy.Matrix([self._target_function_symbolic]).jacobian(
             sympy.Matrix([sympy.Symbol('x'), sympy.Symbol('y')])
@@ -125,7 +125,7 @@ class Field(FieldInterface):
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
 
         values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
-            np.array([self._target_function(tf.Point(x, y)) for x, y in coordinates])  # type: ignore
+            np.array([self._target_function(tf.Point(x, y)) for x, y in coordinates])
 
         values = values.reshape((len(x_values), len(y_values)))
 

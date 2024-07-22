@@ -4,7 +4,7 @@ from src.field.target_function import TARGET_FUNCTION_REGISTER, TARGET_FUNCTION_
 
 class FieldFactory:
     @staticmethod
-    def construct(config) -> Field:
+    def construct(config) -> Field:  # type: ignore
         field: Field = Field(
             FieldParameters(**config["params"]),
             TARGET_FUNCTION_REGISTER[config["type"].lower()],
