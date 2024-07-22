@@ -2,7 +2,6 @@ import json
 import pathlib
 import typing as tp
 
-import click
 import numpy as np
 
 from src.answer.answer import Answer
@@ -30,7 +29,7 @@ class Scene:
 
     def __init__(
         self,
-        path_to_config: str,   
+        path_to_config: str,
     ):
         with open(path_to_config, "r") as f:
             config = json.load(f)
@@ -47,10 +46,10 @@ class Scene:
 
         self._noise: tp.Optional[tp.Type[NoiseBase]] = \
             self._noise_factory.construct(self._answer, config["noise"]) if "noise" in config else None
-        
+
         self._scheduler: tp.Optional[tp.Type[SchedulerInteface]] = \
-            self._scheduler_factory.construct(config["scheduler"]) if "scheduler" in config else None 
-        
+            self._scheduler_factory.construct(config["scheduler"]) if "scheduler" in config else None
+
         self._verbosity: Verbosity = Verbosity(**config["verbosity"])
 
         self._solver: tp.Type[SolverInterface] = \
@@ -81,13 +80,13 @@ class Scene:
             for i in range(1, 1001):
                 self._solver.turn()
                 self._solver.correct_positions(self._field.size)
-            
+
                 particles_positions: np.ndarray[tp.Any, np.dtype[np.float64]] = self._solver.get_swarm_positions()
 
                 particles_scores: list[float] = [
                     self._field.target_function(*particles_positions[j, :]) for j in range(particles_positions.shape[0])
                 ]
-            
+
                 if self._noise is not None:
                     particles_scores = [
                         particles_scores[j] + self._noise.get_noise(particles_positions[j, :])
@@ -110,7 +109,7 @@ class Scene:
                 if self._verbosity.value > 1:
                     if i % self._verbosity.period == 0:
                         self._solver.show(f"Epoch #{i}")
-            
+
             self._solver.show("Final Position")
 
         if isinstance(self._solver, gradient.GradientLift):
