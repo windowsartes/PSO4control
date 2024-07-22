@@ -1,18 +1,15 @@
-import os
 import typing as tp
 import pickle
-from abc import ABC, abstractmethod
-from math import ceil
+from abc import abstractmethod
 
 import matplotlib
-matplotlib.use('TKAgg')
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 
 from src.solvers.solver_interface import SolverInterface
 from src.solvers.swarm.particle import Particle
 from src.solvers.swarm import swarm_params
+
+matplotlib.use('TKAgg')
 
 
 class SwarmInterface(SolverInterface):
@@ -46,7 +43,7 @@ class SwarmInterface(SolverInterface):
 class SwarmBase(SwarmInterface):
     def get_swarm_positions(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         positions: np.ndarray[tp.Any, np.dtype[np.float64]] = np.empty((len(self._particles), 2), dtype=np.double)
-            
+
         for index, particle in enumerate(self._particles):
             positions[index] = particle.position
 
@@ -60,7 +57,7 @@ class SwarmBase(SwarmInterface):
         self,
         field_size: float,
     ) -> None:
-        for i in range(len(self._particles)):  
+        for i in range(len(self._particles)):
             self._particles[i].position[0] = max(self._particles[i].position[0], 0)
             self._particles[i].position[0] = min(self._particles[i].position[0], field_size)
 
@@ -69,6 +66,7 @@ class SwarmBase(SwarmInterface):
 
 
 SOLVER_REGISTER: dict[str, SwarmBase] = {}
+
 
 def solver(
     cls: tp.Type[SwarmBase],
@@ -85,7 +83,6 @@ class SwarmCentralized(SwarmBase):
         field_size: float,
         field_quality_scale: float,
     ):
-        spawn_edge: int = np.random.randint(4)
         self._particles: list[Particle] = []
         for i in range(params.n_particles):
             self._particles.append(
@@ -121,12 +118,12 @@ class SwarmCentralized(SwarmBase):
 
     def show(self, title: str):
         backend = matplotlib.get_backend()
-    
+
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
-        
+
         with open("./stored_field/field.pickle", "rb") as f:
             figure = pickle.load(f)
-        ax = plt.gca()
+        ax = matplotlib.patches.gca()
 
         x, y = 100, 100
 
@@ -158,11 +155,11 @@ class SwarmCentralized(SwarmBase):
                 fontsize=10,
             )
 
-        plt.draw()
-        plt.gcf().canvas.flush_events()
+        matplotlib.patches.draw()
+        matplotlib.patches.gcf().canvas.flush_events()
 
-        plt.pause(2.5)
-        plt.close(figure)
+        matplotlib.patches.pause(2.5)
+        matplotlib.patches.close(figure)
 
 
 @solver
@@ -204,7 +201,7 @@ class SwarmDecentralized(SwarmBase):
         for i in range(len(self._particles)):
             for j in range(len(self._particles)):
                 if np.linalg.norm(self._particles[i].position - self._particles[j].position) < \
-                    self._connection_radius * self._field_size:
+                        self._connection_radius * self._field_size:
                     if self._best_global_scores[i] < self._particles[j].best_score:
                         self._best_global_scores[i] = self._particles[j].best_score
                         self._best_global_positions[i] = self._particles[j].best_position
@@ -215,12 +212,12 @@ class SwarmDecentralized(SwarmBase):
 
     def show(self, title: str):
         backend = matplotlib.get_backend()
-    
+
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
-        
+
         with open("./stored_field/field.pickle", "rb") as f:
             figure = pickle.load(f)
-        ax = plt.gca()
+        ax = matplotlib.patches.gca()
 
         x, y = 100, 100
 
@@ -253,7 +250,7 @@ class SwarmDecentralized(SwarmBase):
             )
 
         for coordinate in coordinates:
-            circle = mpatches.Circle(
+            circle = matplotlib.patches.Circle(
                 coordinate * self._field_quality_scale,
                 self._connection_radius * self._field_size * self._field_quality_scale,
                 color="g",
@@ -262,8 +259,8 @@ class SwarmDecentralized(SwarmBase):
             )
             ax.add_patch(circle)
 
-        plt.draw()
-        plt.gcf().canvas.flush_events()
+        matplotlib.patches.draw()
+        matplotlib.patches.gcf().canvas.flush_events()
 
-        plt.pause(2.5)
-        plt.close(figure)
+        matplotlib.patches.pause(2.5)
+        matplotlib.patches.close(figure)

@@ -160,7 +160,7 @@ class Particle:
         self._best_position: np.ndarray[tp.Any, np.dtype[np.float64]] = self._position
 
         self._path_length: float = 0.
-        
+
         self._w: float = coefficients.w
         self._c1: float = coefficients.c1
         self._c2: float = coefficients.c2
@@ -200,7 +200,7 @@ class Particle:
         return self._best_position
 
     @best_position.setter
-    def position(
+    def best_position(
         self,
         new_value: np.ndarray[tp.Any, np.dtype[np.float64]],
     ) -> None:
