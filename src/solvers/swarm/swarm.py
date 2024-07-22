@@ -123,7 +123,7 @@ class SwarmCentralized(SwarmBase):
 
         with open("./stored_field/field.pickle", "rb") as f:
             figure = pickle.load(f)
-        ax = matplotlib.patches.gca()
+        ax = matplotlib.pyplot.gca()
 
         x, y = 100, 100
 
@@ -155,11 +155,11 @@ class SwarmCentralized(SwarmBase):
                 fontsize=10,
             )
 
-        matplotlib.patches.draw()
-        matplotlib.patches.gcf().canvas.flush_events()
+        matplotlib.pyplot.draw()
+        matplotlib.pyplot.gcf().canvas.flush_events()
 
-        matplotlib.patches.pause(2.5)
-        matplotlib.patches.close(figure)
+        matplotlib.pyplot.pause(2.5)
+        matplotlib.pyplot.close(figure)
 
 
 @solver
@@ -217,7 +217,7 @@ class SwarmDecentralized(SwarmBase):
 
         with open("./stored_field/field.pickle", "rb") as f:
             figure = pickle.load(f)
-        ax = matplotlib.patches.gca()
+        ax = matplotlib.pyplot.gca()
 
         x, y = 100, 100
 
@@ -259,8 +259,8 @@ class SwarmDecentralized(SwarmBase):
             )
             ax.add_patch(circle)
 
-        matplotlib.patches.draw()
-        matplotlib.patches.gcf().canvas.flush_events()
+        matplotlib.pyplot.draw()
+        matplotlib.pyplot.gcf().canvas.flush_events()
 
-        matplotlib.patches.pause(2.5)
-        matplotlib.patches.close(figure)
+        matplotlib.pyplot.pause(2.5)
+        matplotlib.pyplot.close(figure)
