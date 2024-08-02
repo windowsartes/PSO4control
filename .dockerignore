@@ -9,6 +9,7 @@ build/
 __pycache__/
 
 stored_field/
+config_examples/
 
 report.pdf
 LICENSE.md

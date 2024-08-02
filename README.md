@@ -44,7 +44,7 @@ Also you can run this project with docker.
 First off all you need to build an image using [Dockerfile](./Dockerfile).
 
 ```bash
-docker build name:tag .
+docker build -t name:tag .
 ```
 
 Then you can use constructed image to create a container using:
@@ -55,13 +55,15 @@ docker run -it --rm name:tag
 
 ### WSL/Windows integration
 
-Firstly you need to set up everything according to [this guide](https://stackoverflow.com/questions/46018102/how-can-i-use-matplotlib-pyplot-in-a-docker-container).
+Firstly you need to set up everything according to [this guide](https://stackoverflow.com/questions/46018102/how-can-i-use-matplotlib-pyplot-in-a-docker-container). Also it's necessary to run the X server.
 
 Then you can create and run the container using:
 
 ```bash
-docker run -it --rm -e DISPLAY=$DISPLAY name:tag
+docker run -it --rm -v $(pwd):/app -e DISPLAY=$DISPLAY name:tag
 ```
+
+N.B: it's ${pwd} in powershell
 
 
 ## How to use this project
