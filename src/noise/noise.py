@@ -14,7 +14,7 @@ class NoiseHyperparameters(BaseModel):
 
 class NoiseInterface(ABC):
     @abstractmethod
-    def get_noise(  # type: ignore 
+    def get_noise(  # type: ignore
         self,
         *args,
         **kwargs,
