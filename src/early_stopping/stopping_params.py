@@ -1,12 +1,13 @@
+import typing as tp
 from pydantic import BaseModel
 
 
-STOPPING_PARAMS_REGISTER: dict[str, BaseModel] = {}
+STOPPING_PARAMS_REGISTER: dict[str, tp.Type[BaseModel]] = {}
 
 
 def stopping_params(
-    cls: BaseModel,
-) -> BaseModel:
+    cls: tp.Type[BaseModel],
+) -> tp.Type[BaseModel]:
     STOPPING_PARAMS_REGISTER[cls.__name__[:-14].lower()] = cls
     return cls
 
