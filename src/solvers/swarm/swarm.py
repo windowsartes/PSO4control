@@ -4,6 +4,7 @@ from abc import abstractmethod
 
 import matplotlib
 import numpy as np
+from matplotlib import pyplot as plt
 
 from src.solvers.solver_interface import SolverInterface
 from src.solvers.swarm.particle import Particle
@@ -21,7 +22,10 @@ class SwarmInterface(SolverInterface):
         pass
 
     @abstractmethod
-    def correct_positions(self) -> None:
+    def correct_positions(
+        self,
+        field_size: float,
+    ) -> None:
         pass
 
     @abstractmethod
@@ -36,11 +40,19 @@ class SwarmInterface(SolverInterface):
     def show(
         self,
         title: str,
-    ):
+    ) -> None:
         pass
 
 
 class SwarmBase(SwarmInterface):
+    def __init__(
+        self,
+        params: swarm_params.SwarmCentralizedParams,
+        field_size: float,
+        field_quality_scale: float,
+    ) -> None:
+        self._particles: list[Particle]
+
     def get_swarm_positions(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         positions: np.ndarray[tp.Any, np.dtype[np.float64]] = np.empty((len(self._particles), 2), dtype=np.double)
 
@@ -65,7 +77,7 @@ class SwarmBase(SwarmInterface):
             self._particles[i].position[1] = min(self._particles[i].position[1], field_size)
 
 
-SOLVER_REGISTER: dict[str, SwarmBase] = {}
+SOLVER_REGISTER: dict[str, tp.Type[SwarmBase]] = {}
 
 
 def solver(
@@ -112,18 +124,21 @@ class SwarmCentralized(SwarmBase):
                 self._best_global_score = particles_scores[i]
                 self._best_global_position = self._particles[i].position
 
-    def turn(self):
+    def turn(self) -> None:
         for i in range(len(self._particles)):
             self._particles[i].move(self._best_global_position, self._field_size)
 
-    def show(self, title: str):
+    def show(
+        self,
+        title: str,
+    ) -> None:
         backend = matplotlib.get_backend()
 
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
 
         with open("./stored_field/field.pickle", "rb") as f:
             figure = pickle.load(f)
-        ax = matplotlib.pyplot.gca()
+        ax = plt.gca()
 
         x, y = 100, 100
 
@@ -155,11 +170,11 @@ class SwarmCentralized(SwarmBase):
                 fontsize=10,
             )
 
-        matplotlib.pyplot.draw()
-        matplotlib.pyplot.gcf().canvas.flush_events()
+        plt.draw()
+        plt.gcf().canvas.flush_events()
 
-        matplotlib.pyplot.pause(2.5)
-        matplotlib.pyplot.close(figure)
+        plt.pause(2.5)
+        plt.close(figure)
 
 
 @solver
@@ -206,18 +221,21 @@ class SwarmDecentralized(SwarmBase):
                         self._best_global_scores[i] = self._particles[j].best_score
                         self._best_global_positions[i] = self._particles[j].best_position
 
-    def turn(self):
+    def turn(self) -> None:
         for i in range(len(self._particles)):
             self._particles[i].move(self._best_global_positions[i], self._field_size)
 
-    def show(self, title: str):
+    def show(
+        self,
+        title: str,
+    ) -> None:
         backend = matplotlib.get_backend()
 
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
 
         with open("./stored_field/field.pickle", "rb") as f:
             figure = pickle.load(f)
-        ax = matplotlib.pyplot.gca()
+        ax = plt.gca()
 
         x, y = 100, 100
 
@@ -259,8 +277,8 @@ class SwarmDecentralized(SwarmBase):
             )
             ax.add_patch(circle)
 
-        matplotlib.pyplot.draw()
-        matplotlib.pyplot.gcf().canvas.flush_events()
+        plt.draw()
+        plt.gcf().canvas.flush_events()
 
-        matplotlib.pyplot.pause(2.5)
-        matplotlib.pyplot.close(figure)
+        plt.pause(2.5)
+        plt.close(figure)
