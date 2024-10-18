@@ -36,7 +36,7 @@ class Particle:
                     np.random.uniform(-field_size, field_size),
                 ]
             )
-        elif spawn_params.type == "edges":
+        elif spawn_params.type == "edge":
             spawn_edge: int = np.random.randint(4)
             if spawn_edge == 0:  # left
                 self._position = np.array(
@@ -90,7 +90,8 @@ class Particle:
                         np.random.uniform(-field_size, 0),
                     ]
                 )
-        elif spawn_params.type == "small_area":
+        elif spawn_params.type == "spot":
+            assert isinstance(spawn_params.factors.position, float)
             if spawn_params.spawn_edge == 0:  # left
                 self._position = np.array(
                     [
@@ -155,6 +156,167 @@ class Particle:
                         np.random.uniform(-field_size, 0),
                     ]
                 )
+        elif spawn_params.type == "arc":
+            assert isinstance(spawn_params.start_position, float)
+            assert isinstance(spawn_params.finish_position, float)
+            if spawn_params.start_edge == 0:  # left
+                start_position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array(
+                    [
+                        0,
+                        field_size * spawn_params.start_position,
+                    ]
+                )
+            elif spawn_params.start_edge == 1:  # right
+                start_position = np.array(
+                    [
+                        field_size,
+                        field_size * spawn_params.start_position,
+                    ]
+                )
+            elif spawn_params.spawn_edge == 2:  # top
+                start_position = np.array(
+                    [
+                        field_size * spawn_params.start_position,
+                        0,
+                    ]
+                )
+            elif spawn_params.spawn_edge == 3:  # bottom
+                start_position = np.array(
+                    [
+                        field_size * spawn_params.start_position,
+                        field_size,
+                    ]
+                )
+            else:
+                raise ValueError("spwan edge must be int from 0 to 3")
+
+            if spawn_params.finish_edge == 0:  # left
+                finish_position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array(
+                    [
+                        0,
+                        field_size * spawn_params.finish_position,
+                    ]
+                )
+
+            elif spawn_params.finish_edge == 1:  # right
+                finish_position = np.array(
+                    [
+                        field_size,
+                        field_size * spawn_params.finish_position,
+                    ]
+                )
+            elif spawn_params.finish_edge == 2:  # top
+                finish_position = np.array(
+                    [
+                        field_size * spawn_params.finish_position,
+                        0,
+                    ]
+                )
+            elif spawn_params.finish_edge == 3:  # bottom
+                finish_position = np.array(
+                    [
+                        field_size * spawn_params.finish_position,
+                        field_size,
+                    ]
+                )
+            else:
+                raise ValueError("finish edge must be int from 0 to 3")
+
+            t = np.random.uniform(0 + 0.05, 1 - 0.05)
+
+            self._position = start_position + t * (finish_position - start_position)
+            self._velocity = np.array(
+                [
+                    np.random.uniform(-field_size, field_size),
+                    np.random.uniform(-field_size, field_size),
+                ]
+            )
+        elif spawn_params.type == "landing":
+            assert isinstance(spawn_params.start_position, float)
+            assert isinstance(spawn_params.finish_position, float)
+            assert isinstance(spawn_params.factors.landing, float)
+
+            if spawn_params.start_edge == 0:  # left
+                start_position = np.array(
+                    [
+                        0,
+                        field_size * spawn_params.start_position,
+                    ]
+                )
+            elif spawn_params.start_edge == 1:  # right
+                start_position = np.array(
+                    [
+                        field_size,
+                        field_size * spawn_params.start_position,
+                    ]
+                )
+            elif spawn_params.spawn_edge == 2:  # top
+                start_position = np.array(
+                    [
+                        field_size * spawn_params.start_position,
+                        0,
+                    ]
+                )
+            elif spawn_params.spawn_edge == 3:  # bottom
+                start_position = np.array(
+                    [
+                        field_size * spawn_params.start_position,
+                        field_size,
+                    ]
+                )
+            else:
+                raise ValueError("spwan edge must be int from 0 to 3")
+
+            if spawn_params.finish_edge == 0:  # left
+                finish_position = np.array(
+                    [
+                        0,
+                        field_size * spawn_params.finish_position,
+                    ]
+                )
+            elif spawn_params.finish_edge == 1:  # right
+                finish_position = np.array(
+                    [
+                        field_size,
+                        field_size * spawn_params.finish_position,
+                    ]
+                )
+            elif spawn_params.finish_edge == 2:  # top
+                finish_position = np.array(
+                    [
+                        field_size * spawn_params.finish_position,
+                        0,
+                    ]
+                )
+            elif spawn_params.finish_edge == 3:  # bottom
+                finish_position = np.array(
+                    [
+                        field_size * spawn_params.finish_position,
+                        field_size,
+                    ]
+                )
+            else:
+                raise ValueError("finish edge must be int from 0 to 3")
+
+            self._position = start_position + spawn_params.landing_position * (finish_position - start_position)
+            self._velocity = np.array(
+                    [
+                        np.random.uniform(-field_size, field_size),
+                        np.random.uniform(-field_size, field_size),
+                    ]
+                )
+
+            t_x: float = np.random.uniform(0, 1)
+            t_y: float = np.random.uniform(0, 1)
+
+            self._position += np.array(
+                [
+                    t_x * field_size / spawn_params.factors.landing,
+                    t_y * field_size / spawn_params.factors.landing,
+                ]
+            )
+        else:
+            raise ValueError("spaen type must be 'spot', 'edge', 'arc' or 'landing'")
 
         self._best_score: float = 0.
         self._best_position: np.ndarray[tp.Any, np.dtype[np.float64]] = self._position
