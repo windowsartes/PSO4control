@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class SolverInterface(ABC):
     @abstractmethod
-    def turn(
+    def turn(  # type: ignore
         self,
         *args,
         **kwargs,
