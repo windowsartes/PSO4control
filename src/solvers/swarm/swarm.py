@@ -1,5 +1,6 @@
-import typing as tp
 import pickle
+import random
+import typing as tp
 from abc import abstractmethod
 
 import matplotlib
@@ -203,6 +204,7 @@ class SwarmDecentralized(SwarmBase):
         self._field_quality_scale: float = field_quality_scale
 
         self._connection_radius: float = params.connection_radius
+        self._connection_dropout_probability: float = params.connection_dropout_probability
 
     def update_scores(
         self,
@@ -215,8 +217,11 @@ class SwarmDecentralized(SwarmBase):
 
         for i in range(len(self._particles)):
             for j in range(len(self._particles)):
-                if np.linalg.norm(self._particles[i].position - self._particles[j].position) < \
-                        self._connection_radius * self._field_size:
+                if all([
+                    random.uniform(0, 1) > self._connection_dropout_probability,
+                    np.linalg.norm(self._particles[i].position - self._particles[j].position) <
+                        self._connection_radius * self._field_size,
+                ]):
                     if self._best_global_scores[i] < self._particles[j].best_score:
                         self._best_global_scores[i] = self._particles[j].best_score
                         self._best_global_positions[i] = self._particles[j].best_position

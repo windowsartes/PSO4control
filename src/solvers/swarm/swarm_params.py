@@ -47,3 +47,4 @@ class SwarmCentralizedParams(BaseModel):
 @solver_params
 class SwarmDecentralizedParams(SwarmCentralizedParams):
     connection_radius: float
+    connection_dropout_probability: float
