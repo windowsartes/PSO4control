@@ -6,7 +6,7 @@ from math import ceil
 
 import numpy as np
 import seaborn as sns
-import sympy
+# import sympy
 from matplotlib import pyplot as plt
 from matplotlib import colormaps as cm
 from pydantic import BaseModel
@@ -17,6 +17,14 @@ from src.field import target_function as tf
 class FieldParameters(BaseModel):
     size: float
     quality_scale: float
+    centre: tuple[float, float]
+    sigma: float
+
+
+class AdditionalParameter(BaseModel):
+    centre: tuple[float, float]
+    sigma: float
+    coeff: float
 
 
 class FieldInterface(ABC):
@@ -38,6 +46,7 @@ class FieldInterface(ABC):
     ) -> float:
         pass
 
+    """
     @abstractmethod
     def gradient(
         self,
@@ -53,6 +62,7 @@ class FieldInterface(ABC):
         y: float,
     ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         pass
+    """
 
     @abstractmethod
     def show(self) -> None:
@@ -70,11 +80,25 @@ class Field(FieldInterface):
     def __init__(
         self,
         parameters: FieldParameters,
-        target_function: tp.Callable[[tf.Point], float],
-        target_function_symbolic: tp.Callable[[tf.SympyPoint], sympy.Expr],
+        additional_parameters: tp.Optional[AdditionalParameter],
+        target_function: tp.Type[tp.Callable[[tf.Point], float]],
+        # target_function_symbolic: tp.Callable[[tf.SympyPoint], sympy.Expr],
     ):
         self._parameters: FieldParameters = parameters
-        self._target_function: tp.Callable[[tf.Point], float] = target_function
+        self._additional_parameters: tp.Optional[AdditionalParameter] = additional_parameters
+        self._target_function: tp.Callable[[tf.Point], float] = target_function(  # type: ignore
+            tf.Point(*self._parameters.centre),
+            self._parameters.sigma,
+        )
+        self._target_max_value = self._target_function(tf.Point(*self._parameters.centre))
+        if self._additional_parameters is not None:
+            self._additional_target_function: tp.Callable[[tf.Point], float] = target_function(  # type: ignore
+                tf.Point(*self._additional_parameters.centre),
+                self._additional_parameters.sigma,
+            )
+            self._additional_max_value: float = \
+                self._additional_target_function(tf.Point(*self._additional_parameters.centre))
+        """
         self._target_function_symbolic: sympy.Expr = \
             target_function_symbolic(tf.SympyPoint(sympy.Symbol('x'), sympy.Symbol('y')))
         self._gradient: sympy.Expr = sympy.Matrix([self._target_function_symbolic]).jacobian(
@@ -84,6 +108,7 @@ class Field(FieldInterface):
             self._target_function_symbolic,
             [sympy.Symbol('x'), sympy.Symbol('y')]
         )
+        """
 
     @property
     def size(self) -> float:
@@ -98,8 +123,16 @@ class Field(FieldInterface):
         x: float,
         y: float,
     ) -> float:
-        return self._target_function(tf.Point(x, y))
+        if self._additional_parameters is None:
+            return self._target_function(tf.Point(x, y))
 
+        return max(
+            self._target_function(tf.Point(x, y)),
+            (self._additional_target_function(tf.Point(x, y)) / self._additional_max_value) *
+            (self._target_max_value*self._additional_parameters.coeff),
+        )
+
+    """
     def gradient(
         self,
         x: float,
@@ -113,6 +146,7 @@ class Field(FieldInterface):
         y: float,
     ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
         return np.array([float(value) for value in self._hessian.subs([('x', x), ('y', y)])]).reshape((2, 2))
+    """
 
     def show(self) -> None:
         x_values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
@@ -125,8 +159,7 @@ class Field(FieldInterface):
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
 
         values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
-            np.array([self._target_function(tf.Point(x, y)) for x, y in coordinates])
-
+            np.array([self.target_function(x, y) for x, y in coordinates])
         values = values.reshape((len(x_values), len(y_values)))
 
         sns.heatmap(data=values, cmap=cm["hot"])
@@ -161,8 +194,9 @@ class Field(FieldInterface):
         coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
 
         values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
-            np.array([self._target_function(tf.Point(x, y)) for x, y in coordinates])
+            np.array([self.target_function(x, y) for x, y in coordinates])
         values = values.reshape((len(x_values), len(y_values)))
+
         sns.heatmap(values, cmap=cm["hot"])
         plt.axis('off')
 
