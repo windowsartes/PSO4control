@@ -22,7 +22,7 @@
         {
             "centre": [5.0, 1.0],
             "sigma": 2.0,
-            "coeff": 0.5
+            "coeff": 0.25
         }
     },
     "verbosity":
