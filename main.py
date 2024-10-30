@@ -33,7 +33,7 @@ def cli(
                     config["solver"]["params"]["n_particles"] = n
                     config["solver"]["params"]["connection_radius"] = r
 
-                with open(f"./results_{n}_{r}_{noise_scale * 100}.csv", 'w') as f: 
+                with open(f"./{config['solver']['params']['spawn']['type']}_{n}_{r}_{noise_scale * 100}.csv", 'w') as f: 
                     results = (Parallel(n_jobs=n_jobs)(delayed(Scene(config=config).solve)() for i in range(n_iterations)))
                     f.write('error,path\n')
                     for (error, path) in results:
