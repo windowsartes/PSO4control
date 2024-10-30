@@ -12,7 +12,7 @@ from src.solvers.solver_interface import SolverInterface
 from src.solvers.swarm.particle import Particle
 from src.solvers.swarm import swarm_params
 
-matplotlib.use('TKAgg')
+# matplotlib.use('TKAgg')
 
 
 class SwarmInterface(SolverInterface):
