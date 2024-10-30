@@ -19,7 +19,7 @@ def cli(
 ) -> None:
     # print(scene.solve())
     noise_scale_values = [0.001, 0.0025, 0.02, 0.05, 0.075]
-    n_values = [3, 4, 5, 10, 15, 20]
+    n_values = [3, 4, 5, 10, 15]
     r_values = [0.05, 0.10, 0.25, 0.50, 1.0]
 
     total = len(noise_scale_values) * len(n_values) * len(r_values)
@@ -35,7 +35,7 @@ def cli(
                     config["solver"]["params"]["connection_radius"] = r
 
                 with open(f"./{config['solver']['params']['spawn']['type']}_{n}_{r}_{noise_scale * 100}.csv", 'w') as f: 
-                    results = (Parallel(n_jobs=n_jobs)(delayed(Scene(config=config).solve)() for i in range(n_iterations)))
+                    results = (Parallel(n_jobs=-1)(delayed(Scene(config=config).solve)() for i in range(n_iterations)))
                     results = np.array(results)
                     f.write('error mean,error std, path mean, path std\n')
                     f.write(f'{np.mean(results[:, 0])},{np.std(results[:, 0], ddof=1)}, {np.mean(results[:, 1])}, {np.std(results[:, 1], ddof=1)}\n')
