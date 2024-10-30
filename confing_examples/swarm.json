@@ -5,7 +5,7 @@
         "params":
         {
             "gamma": 0.75,
-            "step_size": 50
+            "step_size": 100
         }
     },
     "field":
@@ -14,12 +14,20 @@
         "params":
         {
             "size": 10.0,
-            "quality_scale": 100.0
+            "quality_scale": 100.0,
+            "centre": [5.0, 5.0],
+            "sigma": 4.0
+        },
+        "additional_params":
+        {
+            "centre": [5.0, 1.0],
+            "sigma": 2.0,
+            "coeff": 0.5
         }
     },
     "verbosity":
     {
-        "value": 2,
+        "value": -1,
         "period": 100
     },
     "answer":
@@ -40,23 +48,23 @@
         {
             "coordinate":
             {
-                "epsilon": 0.0001,
+                "epsilon": 0.01,
                 "ratio": 0.75
             },
             "velocity":
             {
-                "epsilon": 0.0001,
+                "epsilon": 0.01,
                 "ratio": 0.75
             }
         }
     },
     "noise":
     {
-        "type": "Gaussian",
+        "type": "RelativeVariance",
         "params":
         {
             "loc": 0.0,
-            "scale": 0.000125
+            "scale": 0.10
         }
     },
     "solver":
@@ -66,23 +74,24 @@
         "params":
         {
             "n_iterations": 1000,
-            "n_particles": 20,
+            "n_particles": 10,
             "connection_radius": 0.5,
+            "connection_dropout_probability": 0.0,
             "spawn":
             {
-                "type": "edges",
-                "spawn_edge": null,
+                "type": "landing",
                 "factors":
                 {
-                    "velocity": 50.0,
-                    "position": null
+                    "velocity": 100.0,
+                    "position": 20.0,
+                    "landing": 10.0
                 }
             },
             "coefficients":
             {
-                "w": 1,
-                "c1": 2,
-                "c2": 2
+                "w": 4,
+                "c1": 1,
+                "c2": 1
             }
         }
     }

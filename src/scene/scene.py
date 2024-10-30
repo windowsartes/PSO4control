@@ -29,10 +29,13 @@ class Scene:
 
     def __init__(
         self,
-        path_to_config: str,
+        *,
+        path_to_config: str | None = None,
+        config = None,
     ):
-        with open(path_to_config, "r") as f:
-            config = json.load(f)
+        if path_to_config is not None:
+            with open(path_to_config, "r") as f:
+                config = json.load(f)
 
         self._answer: Answer = Answer(**config["answer"])
 
@@ -117,8 +120,12 @@ class Scene:
                 self._solver.update_scores(particles_scores)
 
                 if self._early_stop_checker.check(self._solver.particles):
-                    self._solver.show("Final Position")
-                    return
+                    if self._verbosity.value > 0:
+                        self._solver.show("Final Position")
+                    return (
+                        self._solver.get_position_error(self._answer.answers[0], self._field.size),
+                        self._solver.get_path_length(),
+                    )
 
                 if self._scheduler is not None:
                     w: float = self._solver.particles[0].w
@@ -131,7 +138,13 @@ class Scene:
                     if i % self._verbosity.period == 0:
                         self._solver.show(f"Epoch #{i}")
 
-            self._solver.show("Final Position")
+            if self._verbosity.value > 0:
+                self._solver.show("Final Position")
+
+            return (
+                self._solver.get_position_error(self._answer.answers[0], self._field.size),
+                self._solver.get_path_length(),
+            )
 
         """
         if isinstance(self._solver, gradient.GradientLift):

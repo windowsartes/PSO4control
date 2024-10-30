@@ -7,6 +7,7 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
+from src.answer.answer import Point
 from src.solvers.solver_interface import SolverInterface
 from src.solvers.swarm.particle import Particle
 from src.solvers.swarm import swarm_params
@@ -76,6 +77,26 @@ class SwarmBase(SwarmInterface):
 
             self._particles[i].position[1] = max(self._particles[i].position[1], 0)
             self._particles[i].position[1] = min(self._particles[i].position[1], field_size)
+
+    def get_position_error(
+        self,
+        answer_point: Point,
+        field_size: float,
+    ) -> float:
+        position_errors = []
+        for particle in self._particles:
+            position_errors.append(
+                np.linalg.norm(
+                    particle.best_position - np.array((answer_point.x, answer_point.y))
+                ) / field_size
+            )
+
+        return float(np.mean(position_errors))
+
+    def get_path_length(
+        self,
+    ) -> float:
+        return sum([p.path_length for p in self._particles])
 
 
 SOLVER_REGISTER: dict[str, tp.Type[SwarmBase]] = {}
