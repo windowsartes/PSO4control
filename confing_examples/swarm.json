@@ -79,7 +79,7 @@
             "connection_dropout_probability": 0.0,
             "spawn":
             {
-                "type": "landing",
+                "type": "arc",
                 "factors":
                 {
                     "velocity": 100.0,
