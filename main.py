@@ -34,7 +34,7 @@ def cli(
                     config["solver"]["params"]["n_particles"] = n
                     config["solver"]["params"]["connection_radius"] = r
 
-                    n_ir = config["solver"]["params"]["n_iterations"]
+                    n_ir = np.sqrt(config["solver"]["params"]["n_iterations"])
 
                 with open(f"./{config['solver']['params']['spawn']['type']}_{n}_{r}_{noise_scale * 100}.csv", 'w') as f: 
                     results = (Parallel(n_jobs=-1)(delayed(Scene(config=config).solve)() for i in range(n_iterations)))
