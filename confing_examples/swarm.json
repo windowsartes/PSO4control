@@ -5,7 +5,7 @@
         "params":
         {
             "gamma": 0.75,
-            "step_size": 100
+            "step_size": 1000
         }
     },
     "field":
@@ -22,12 +22,12 @@
         {
             "centre": [5.0, 1.0],
             "sigma": 2.0,
-            "coeff": 0.50
+            "coeff": 0.25
         }
     },
     "verbosity":
     {
-        "value": -1,
+        "value": 1,
         "period": 100
     },
     "answer":
@@ -79,7 +79,7 @@
             "connection_dropout_probability": 0.0,
             "spawn":
             {
-                "type": "landing",
+                "type": "arc",
                 "factors":
                 {
                     "velocity": 100.0,
