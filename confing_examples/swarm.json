@@ -27,7 +27,7 @@
     },
     "verbosity":
     {
-        "value": 1,
+        "value": -1,
         "period": 100
     },
     "answer":
