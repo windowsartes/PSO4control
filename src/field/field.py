@@ -118,6 +118,20 @@ class Field(FieldInterface):
     def quality_scale(self) -> float:
         return self._parameters.quality_scale
 
+    def check_additional(
+        self,
+        x: float,
+        y: float,
+    ) -> float:
+        if self._additional_parameters is None:
+            return self._target_function(tf.Point(x, y))
+
+        target_function_value = self._target_function(tf.Point(x, y))
+        additional_function_value = (self._additional_target_function(tf.Point(x, y)) / self._additional_max_value) * \
+            (self._target_max_value*self._additional_parameters.coeff)
+
+        return 1. if additional_function_value > target_function_value else 0.
+
     def target_function(
         self,
         x: float,
@@ -126,11 +140,21 @@ class Field(FieldInterface):
         if self._additional_parameters is None:
             return self._target_function(tf.Point(x, y))
 
+        target_function_value = self._target_function(tf.Point(x, y))
+        additional_function_value = (self._additional_target_function(tf.Point(x, y)) / self._additional_max_value) * \
+            (self._target_max_value*self._additional_parameters.coeff)
+
+        additional_is_bigger = 1. if additional_function_value > target_function_value else 0.
+
+        return max(target_function_value, additional_function_value)
+
+        '''
         return max(
             self._target_function(tf.Point(x, y)),
             (self._additional_target_function(tf.Point(x, y)) / self._additional_max_value) *
             (self._target_max_value*self._additional_parameters.coeff),
         )
+        '''
 
     """
     def gradient(

@@ -4,6 +4,7 @@ import pathlib
 import typing as tp
 
 import numpy as np
+from tqdm import tqdm
 
 from src.answer.answer import Answer
 from src.early_stopping.checker import EarlyStopCheckerInterface
@@ -51,6 +52,32 @@ class Scene:
             self._field.compute_and_save_field(f"{str(field_dump_dir)}/field.pickle")
 
         # self._field.show()
+        '''
+        total = 0.
+        for x in tqdm(np.arange(0, self._field.size, 0.001)):
+            for y in np.arange(0, self._field.size, 0.001):
+                add_is_bigger = self._field.check_additional(x, y)
+                total += add_is_bigger
+
+        print(total / (self._field.size * 1000 * self._field.size * 1000))
+        '''
+        '''
+        total = 0.
+
+        for x in tqdm(np.arange(0, self._field.size, 0.001)):
+            for y in [0., ]:
+                add_is_bigger = self._field.check_additional(x, y)
+                total += add_is_bigger
+
+        '''
+        '''
+        for y in tqdm(np.arange(0, self._field.size, 0.001)):
+            for x in [0.0, 10.0]:
+                add_is_bigger = self._field.check_additional(x, y)
+                total += add_is_bigger
+        '''
+        
+        # print(total / (self._field.size * 1000))
 
         self._noise: tp.Optional[noise.NoiseBase] = \
             self._noise_factory.construct(self._answer, config["noise"]) if "noise" in config else None

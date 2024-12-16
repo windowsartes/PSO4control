@@ -39,7 +39,7 @@ def cli(
                 with open(f"./{config['solver']['params']['spawn']['type']}_{n}_{r}_{noise_scale * 100}.csv", 'w') as f: 
                     results = (Parallel(n_jobs=-1)(delayed(Scene(config=config).solve)() for i in range(n_iterations)))
                     results = np.array(results)
-                    f.write('error mean,error std, path mean, path std\n')
+                    f.write('error mean,error std,path mean,path std\n')
                     f.write(f'{np.mean(results[:, 0])},{2 * np.std(results[:, 0], ddof=1) / n_ir}, {np.mean(results[:, 1])}, {2 * np.std(results[:, 1], ddof=1) / n_ir}\n')
                 print(f'{i}/{total} done')
                 i+=1

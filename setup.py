@@ -15,5 +15,6 @@ setup(
         "pydantic==2.8.2",
         "seaborn==0.13.2",
         "sympy==1.13.1",
+        "scipy",
     ]
 )
