@@ -183,14 +183,14 @@ class Field(FieldInterface):
     """
 
     def show(self) -> None:
-        x_values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+        x_values: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = \
             np.linspace(0, self._parameters.size, ceil(self._parameters.size * self._parameters.quality_scale))
-        y_values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+        y_values: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = \
             np.linspace(0, self._parameters.size, ceil(self._parameters.size * self._parameters.quality_scale))
 
         x_grid, y_grid = np.meshgrid(x_values, y_values)
 
-        coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
+        coordinates: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
 
         values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
             np.array([self.target_function(x, y) for x, y in coordinates])
@@ -200,7 +200,7 @@ class Field(FieldInterface):
         plt.axis('off')
 
         figure, ax = plt.subplots(subplot_kw={"projection": "3d"})
-        surf = ax.plot_surface(
+        surf = ax.plot_surface(  # type: ignore
             x_grid,
             y_grid,
             values,
@@ -216,18 +216,18 @@ class Field(FieldInterface):
         self,
         path_to_file: str | pathlib.Path,
     ) -> None:
-        figure, ax = plt.subplots()
+        figure, _ = plt.subplots()
 
-        x_values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+        x_values: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = \
             np.linspace(0, self._parameters.size, ceil(self._parameters.size * self._parameters.quality_scale))
-        y_values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+        y_values: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = \
             np.linspace(0, self._parameters.size, ceil(self._parameters.size * self._parameters.quality_scale))
 
         x_grid, y_grid = np.meshgrid(x_values, y_values)
 
-        coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
+        coordinates: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.stack((x_grid.flatten(), y_grid.flatten()), -1)
 
-        values: np.ndarray[tp.Any, np.dtype[np.float64]] = \
+        values: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = \
             np.array([self.target_function(x, y) for x, y in coordinates])
         values = values.reshape((len(x_values), len(y_values)))
 

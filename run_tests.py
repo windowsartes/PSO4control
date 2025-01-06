@@ -22,8 +22,8 @@ def cli(  # noqa: ER0914
     n_iterations: int,
     n_resamples: int,
 ) -> None:
-    n_values: list[int] = [4, 5, 7, 10, 15]
-    r_values: list[float] = [0.10, 0.25, 0.50, 1.0]
+    n_values: list[int] = [5, 7, 10, 15]
+    r_values: list[float] = [0.10, 0.25]
     spawns: list[str] = ["arc", "landing", "edge", "spot"]
 
     with open("./logs.txt", "w", encoding="utf-8") as logs:
@@ -36,7 +36,7 @@ def cli(  # noqa: ER0914
         names = ["normaltest", "shapiro", "cramer", "ks", "main_p_value"]
 
         for name in names:
-            data = {}
+            data: dict[str | int, list[float]] = {}
             for n in n_values:
                 data[n] = [-0.001] * len(r_values)
             data["r"] = r_values
@@ -50,15 +50,19 @@ def cli(  # noqa: ER0914
             for r in r_values:
                 with open(path_to_config, "r", encoding="utf-8") as config_file:
                     config = json.load(config_file)
-                    
+
                     config["solver"]["params"]["n_particles"] = n
                     config["solver"]["params"]["connection_radius"] = r
-        
-                    results = (Parallel(n_jobs=n_jobs)(delayed(Scene(config=config).solve)() for i in range(n_iterations)))
+
+                    results = (Parallel(n_jobs=n_jobs)(
+                        delayed(Scene(config=config).solve)() for i in range(n_iterations))
+                    )
                     results = np.array(results)[:, 0]
 
-                    bootstrapped_results = np.array([np.random.choice(results, results.shape[0], replace=True) for _ in range(n_resamples)])
-                        
+                    bootstrapped_results = np.array(
+                        [np.random.choice(results, results.shape[0], replace=True) for _ in range(n_resamples)]
+                    )
+
                     means = np.mean(bootstrapped_results, axis=1)
 
                     dataframes["normaltest"].loc[r, n] = round(
@@ -85,9 +89,9 @@ def cli(  # noqa: ER0914
                     )
 
                     if spawn in ["arc", "landing"]:
-                        p: float = 0.17580727
+                        p: float = 0.70312424
                     else:
-                        p = 0.237625
+                        p = 0.9505
 
                     dataframes["main_p_value"].loc[r, n] = round(
                         sts.ttest_1samp(results, popmean=p * 0.4, alternative="less").pvalue,

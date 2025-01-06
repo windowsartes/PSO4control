@@ -128,7 +128,7 @@ class SwarmCentralized(SwarmBase):
             )
 
         self._best_global_score: float = 0.
-        self._best_global_position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.empty((2))
+        self._best_global_position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.empty((2))
 
         self._field_size: float = field_size
         self._field_quality_scale: float = field_quality_scale
@@ -208,7 +208,7 @@ class SwarmDecentralized(SwarmBase):
         field_quality_scale: float,
     ):
         self._particles: list[Particle] = []
-        for i in range(params.n_particles):
+        for _ in range(params.n_particles):
             self._particles.append(
                 Particle(
                     field_size,
@@ -218,7 +218,7 @@ class SwarmDecentralized(SwarmBase):
             )
 
         self._best_global_scores: list[float] = [0.0] * params.n_particles
-        self._best_global_positions: list[np.ndarray[tp.Any, np.dtype[np.float64]]] = \
+        self._best_global_positions: list[np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]]] = \
             [np.empty((2))] * params.n_particles
 
         self._field_size: float = field_size
@@ -257,7 +257,7 @@ class SwarmDecentralized(SwarmBase):
     ) -> None:
         backend = matplotlib.get_backend()
 
-        coordinates: np.ndarray[tp.Any, np.dtype[np.float64]] = self.get_swarm_positions()
+        coordinates: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = self.get_swarm_positions()
 
         with open("./stored_field/field.pickle", "rb") as f:
             figure = pickle.load(f)

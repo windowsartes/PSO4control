@@ -20,8 +20,8 @@ class Particle:
     ):
         self._field_size: float = field_size
 
-        self._position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.empty((2))
-        self._velocity: np.ndarray[tp.Any, np.dtype[np.float64]] = np.empty((2))
+        self._position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.empty((2))
+        self._velocity: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.empty((2))
 
         if spawn_params.type == "full_location":
             self._position = np.array(
@@ -160,7 +160,7 @@ class Particle:
             assert isinstance(spawn_params.start_position, float)
             assert isinstance(spawn_params.finish_position, float)
             if spawn_params.start_edge == 0:  # left
-                start_position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array(
+                start_position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.array(
                     [
                         0,
                         field_size * spawn_params.start_position,
@@ -191,7 +191,7 @@ class Particle:
                 raise ValueError("spwan edge must be int from 0 to 3")
 
             if spawn_params.finish_edge == 0:  # left
-                finish_position: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array(
+                finish_position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.array(
                     [
                         0,
                         field_size * spawn_params.finish_position,
@@ -319,7 +319,7 @@ class Particle:
             raise ValueError("spaen type must be 'spot', 'edge', 'arc' or 'landing'")
 
         self._best_score: float = 0.
-        self._best_position: np.ndarray[tp.Any, np.dtype[np.float64]] = self._position
+        self._best_position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = self._position
 
         self._path_length: float = 0.
 
@@ -331,9 +331,9 @@ class Particle:
 
     def move(
         self,
-        best_global_position: np.ndarray[tp.Any, np.dtype[np.float64]],
+        best_global_position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]],
         field_size: float,
-    ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]]:
         r_personal: float = np.random.uniform()
         r_global: float = np.random.uniform()
 
@@ -358,24 +358,24 @@ class Particle:
         self._best_score = new_value
 
     @property
-    def best_position(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
+    def best_position(self) -> np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]]:
         return self._best_position
 
     @best_position.setter
     def best_position(
         self,
-        new_value: np.ndarray[tp.Any, np.dtype[np.float64]],
+        new_value: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]],
     ) -> None:
         self._best_position = new_value
 
     @property
-    def position(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
+    def position(self) -> np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]]:
         return self._position
 
     @position.setter
     def position(
         self,
-        new_value: np.ndarray[tp.Any, np.dtype[np.float64]],
+        new_value: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]],
     ) -> None:
         self._position = new_value
 
@@ -384,7 +384,7 @@ class Particle:
         return self._path_length
 
     @property
-    def velocity(self) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
+    def velocity(self) -> np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]]:
         return self._velocity
 
     @property
