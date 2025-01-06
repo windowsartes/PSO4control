@@ -1,5 +1,3 @@
-import typing as tp
-
 from src.answer.answer import Answer
 from src.noise.noise import NOISE_REGISTER, NoiseBase, NoiseHyperparameters
 

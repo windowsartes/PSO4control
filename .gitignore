@@ -11,3 +11,5 @@ __pycache__/
 stored_field/
 
 config.json
+
+nohup.out

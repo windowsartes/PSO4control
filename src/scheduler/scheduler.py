@@ -5,8 +5,19 @@ from src.scheduler import scheduler_params
 
 
 class SchedulerInteface(ABC):
+    def __init__(  # type: ignore
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+        pass
+
     @abstractmethod
-    def step(self, *args, **kwargs):
+    def step(  # type: ignore
+        self,
+        *args,
+        **kwargs,
+    ) -> float:
         pass
 
 
@@ -20,13 +31,19 @@ def scheduler(cls: tp.Type[SchedulerInteface]) -> tp.Type[SchedulerInteface]:
 
 @scheduler
 class StepScheduler(SchedulerInteface):
-    def __init__(self, hyperparameters: scheduler_params.StepSchedulerParams):
+    def __init__(
+        self,
+        hyperparameters: scheduler_params.StepSchedulerParams,
+    ):
         super().__init__()
 
         self._hyperparameters: scheduler_params.StepSchedulerParams = hyperparameters
         self._current_step: int = 0
 
-    def step(self, w: float):
+    def step(
+        self,
+        w: float,
+    ) -> float:
         self._current_step += 1
 
         if self._current_step % self._hyperparameters.step_size == 0:

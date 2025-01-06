@@ -14,9 +14,10 @@ class NoiseHyperparameters(BaseModel):
 
 class NoiseInterface(ABC):
     @abstractmethod
-    def get_noise(
+    def get_noise(  # type: ignore
         self,
-        particle_position: np.ndarray[tp.Any, np.dtype[np.float64]],
+        *args,
+        **kwargs,
     ) -> float:
         pass
 
@@ -27,8 +28,31 @@ class NoiseBase(NoiseInterface):
         answer: Answer,
         params: NoiseHyperparameters,
     ):
+        super().__init__()
+
         self._answer: Answer = answer
         self._params: NoiseHyperparameters = params
+
+
+NOISE_REGISTER: dict[str, tp.Type[NoiseBase]] = {}
+
+
+def noise(cls: tp.Type[NoiseBase]) -> tp.Type[NoiseBase]:
+    NOISE_REGISTER[cls.__name__[:-5].lower()] = cls
+    return cls
+
+
+@noise
+class InverseDistanceNoise(NoiseBase):
+    def __init__(
+        self,
+        answer: Answer,
+        params: NoiseHyperparameters,
+    ):
+        super().__init__(
+            answer,
+            params,
+        )
 
     def _get_closest_answer(
         self,
@@ -49,17 +73,6 @@ class NoiseBase(NoiseInterface):
 
         return closest_answer
 
-
-NOISE_REGISTER: dict[str, tp.Type[NoiseBase]] = {}
-
-
-def noise(cls: tp.Type[NoiseBase]) -> tp.Type[NoiseBase]:
-    NOISE_REGISTER[cls.__name__[:-5].lower()] = cls
-    return cls
-
-
-@noise
-class GaussianNoise(NoiseBase):
     def get_noise(
         self,
         particle_position: np.ndarray[tp.Any, np.dtype[np.float64]],
@@ -70,21 +83,30 @@ class GaussianNoise(NoiseBase):
         return np.random.normal(
             0,
             np.linalg.norm(particle_position - closest_answer),
-            size = 1,
+            size=1,
         )[0] * self._params.scale + self._params.loc
 
 
 @noise
-class UniformNoise(NoiseBase):
+class RelativeVarianceNoise(NoiseBase):
+    def __init__(
+        self,
+        answer: Answer,
+        params: NoiseHyperparameters,
+    ):
+        super().__init__(
+            answer,
+            params,
+        )
+
     def get_noise(
         self,
-        particle_position: np.ndarray[tp.Any, np.dtype[np.float64]],
+        field_value: float,
     ) -> float:
-        closest_answer: np.ndarray[tp.Any, np.dtype[np.float64]] = \
-            self._get_closest_answer(particle_position)
-
-        return np.random.uniform(
-            -np.linalg.norm(particle_position - closest_answer),
-            np.linalg.norm(particle_position - closest_answer),
-            size = 1,
-        )[0] * self._params.scale + self._params.loc
+        return float(
+            np.random.normal(
+                self._params.loc,
+                field_value * self._params.scale,
+                size=1,
+            )[0]
+        )

@@ -2,19 +2,29 @@ import typing as tp
 from abc import ABC, abstractmethod
 
 import numpy as np
-from pydantic import BaseModel
 
 from src.early_stopping import stopping_params
 from src.solvers.swarm.particle import Particle
 
 
 class EarlyStopCheckerInterface(ABC):
+    def __init__(  # type: ignore
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+        pass
+
     @abstractmethod
-    def check(self, *args, **kwargs):
+    def check(  # type: ignore
+        self,
+        *args,
+        **kwargs,
+    ) -> bool:
         pass
 
 
-EARLY_STOP_CHECKER_REGISTER: dict[str, BaseModel] = {}
+EARLY_STOP_CHECKER_REGISTER: dict[str, tp.Type[EarlyStopCheckerInterface]] = {}
 
 
 def checker(
