@@ -22,7 +22,7 @@ class FieldParameters(BaseModel):
 
 
 class AdditionalParameter(BaseModel):
-    centre: tuple[float, float]
+    centre: tuple[tuple[float, float], ...]
     sigma: float
     coeff: float
 
@@ -81,23 +81,32 @@ class Field(FieldInterface):
         self,
         parameters: FieldParameters,
         additional_parameters: tp.Optional[AdditionalParameter],
-        target_function: tp.Type[tp.Callable[[tf.Point], float]],
+        target_function: type[tf.TargetFunctionInterface],
         # target_function_symbolic: tp.Callable[[tf.SympyPoint], sympy.Expr],
     ):
         self._parameters: FieldParameters = parameters
         self._additional_parameters: tp.Optional[AdditionalParameter] = additional_parameters
-        self._target_function: tp.Callable[[tf.Point], float] = target_function(  # type: ignore
+        self._target_function: tf.TargetFunctionInterface = target_function(  # type: ignore
             tf.Point(*self._parameters.centre),
             self._parameters.sigma,
         )
-        self._target_max_value = self._target_function(tf.Point(*self._parameters.centre))
+        self._target_max_value: float = self._target_function(tf.Point(*self._parameters.centre))
+
         if self._additional_parameters is not None:
-            self._additional_target_function: tp.Callable[[tf.Point], float] = target_function(  # type: ignore
-                tf.Point(*self._additional_parameters.centre),
-                self._additional_parameters.sigma,
-            )
-            self._additional_max_value: float = \
-                self._additional_target_function(tf.Point(*self._additional_parameters.centre))
+            self._additional_target_functions: list[tf.TargetFunctionInterface] = []
+            self._additional_max_values: list[float] = []
+
+            for i in range(len(self._additional_parameters.centre)):
+                self._additional_target_functions.append(
+                    target_function(  # type: ignore
+                        tf.Point(*self._additional_parameters.centre[i]),
+                        self._additional_parameters.sigma,
+                    )
+                )
+                self._additional_max_values.append(
+                    self._additional_target_functions[-1](tf.Point(*self._additional_parameters.centre[i]))
+                )
+
         """
         self._target_function_symbolic: sympy.Expr = \
             target_function_symbolic(tf.SympyPoint(sympy.Symbol('x'), sympy.Symbol('y')))
@@ -124,13 +133,19 @@ class Field(FieldInterface):
         y: float,
     ) -> float:
         if self._additional_parameters is None:
-            return self._target_function(tf.Point(x, y))
+            return 0.
 
-        target_function_value = self._target_function(tf.Point(x, y))
-        additional_function_value = (self._additional_target_function(tf.Point(x, y)) / self._additional_max_value) * \
-            (self._target_max_value*self._additional_parameters.coeff)
+        target_function_value: float = self._target_function(tf.Point(x, y))
 
-        return 1. if additional_function_value > target_function_value else 0.
+        for i in range(len(self._additional_target_functions)):
+            candidate: float = \
+                (self._additional_target_functions[i](tf.Point(x, y)) / self._additional_max_values[i]) * \
+                (self._target_max_value*self._additional_parameters.coeff)
+
+            if candidate > target_function_value:
+                return 1.
+
+        return 0.
 
     def target_function(
         self,
@@ -140,21 +155,16 @@ class Field(FieldInterface):
         if self._additional_parameters is None:
             return self._target_function(tf.Point(x, y))
 
-        target_function_value = self._target_function(tf.Point(x, y))
-        additional_function_value = (self._additional_target_function(tf.Point(x, y)) / self._additional_max_value) * \
-            (self._target_max_value*self._additional_parameters.coeff)
+        max_value: float = self._target_function(tf.Point(x, y))
 
-        additional_is_bigger = 1. if additional_function_value > target_function_value else 0.
+        for i in range(len(self._additional_target_functions)):
+            candidate: float = \
+                (self._additional_target_functions[i](tf.Point(x, y)) / self._additional_max_values[i]) * \
+                (self._target_max_value*self._additional_parameters.coeff)
 
-        return max(target_function_value, additional_function_value)
+            max_value = max(max_value, candidate)
 
-        '''
-        return max(
-            self._target_function(tf.Point(x, y)),
-            (self._additional_target_function(tf.Point(x, y)) / self._additional_max_value) *
-            (self._target_max_value*self._additional_parameters.coeff),
-        )
-        '''
+        return max_value
 
     """
     def gradient(

@@ -4,7 +4,7 @@ import pathlib
 import typing as tp
 
 import numpy as np
-from tqdm import tqdm
+# from tqdm import tqdm
 
 from src.answer.answer import Answer
 from src.early_stopping.checker import EarlyStopCheckerInterface
@@ -28,11 +28,11 @@ class Scene:
     _noise_factory: NoiseFactory = NoiseFactory()
     _solver_factory: SolverFactory = SolverFactory()
 
-    def __init__(
+    def __init__(  # type: ignore
         self,
         *,
         path_to_config: str | None = None,
-        config = None,
+        config=None,
     ):
         if path_to_config is not None:
             with open(path_to_config, "r") as f:
@@ -61,22 +61,24 @@ class Scene:
 
         print(total / (self._field.size * 1000 * self._field.size * 1000))
         '''
+        '''
         total = 0.
-
         for x in tqdm(np.arange(0, self._field.size, 0.001)):
             for y in [0., ]:
                 add_is_bigger = self._field.check_additional(x, y)
                 total += add_is_bigger
+
         print(total / (self._field.size * 1000) / 4)
-    
         '''
-        for y in tqdm(np.arange(0, self._field.size, 0.001)):
-            for x in [0.0, 10.0]:
+        '''
+        total = 0.
+        for x in tqdm(np.arange(0, self._field.size / 2, 0.001)):
+            for y in np.arange(0, x, 0.001):
                 add_is_bigger = self._field.check_additional(x, y)
                 total += add_is_bigger
+
+        print(8 * total / (self._field.size * 1000 * self._field.size * 1000))
         '''
-        
-        # print(total / (self._field.size * 1000))
 
         self._noise: tp.Optional[noise.NoiseBase] = \
             self._noise_factory.construct(self._answer, config["noise"]) if "noise" in config else None
@@ -119,7 +121,7 @@ class Scene:
         if self._verbosity.value > 0:
             self._solver.show("Starting position")
 
-    def solve(self) -> None:
+    def solve(self) -> tuple[float, float]:
         if isinstance(self._solver, swarm.SwarmBase):
             for i in range(1, self._n_iterations + 1):
                 self._solver.turn()
@@ -196,3 +198,4 @@ class Scene:
 
             self._solver.show("Final Position")
         """
+        raise AttributeError("wrong solver type")

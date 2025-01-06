@@ -1,4 +1,5 @@
-import typing as tp
+from abc import ABC, abstractmethod
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -11,24 +12,35 @@ class Point:
     y: float
 
 
-TARGET_FUNCTION_REGISTER: dict[str, tp.Type[tp.Callable[[Point], float]]] = {}
+class TargetFunctionInterface(ABC):
+    @abstractmethod
+    def __call__(
+        self,
+        point: Point,
+    ) -> float:
+        pass
+
+
+TARGET_FUNCTION_REGISTER: dict[str, type[TargetFunctionInterface]] = {}
 
 
 def target_function(
-    function: tp.Type[tp.Callable[[Point], float]],
-) -> tp.Type[tp.Callable[[Point], float]]:
+    function: type[TargetFunctionInterface],
+) -> type[TargetFunctionInterface]:
     TARGET_FUNCTION_REGISTER[function.__name__.lower()] = function
 
     return function
 
 
 @target_function
-class gaussian:
+class Gaussian(TargetFunctionInterface):
     def __init__(
         self,
         centre: Point = Point(5, 5),
         sigma: float = 10,
     ):
+        super().__init__()
+
         self._centre: Point = centre
         self._sigma: float = sigma
 

@@ -329,7 +329,6 @@ class Particle:
 
         self._velocity_factor: float = spawn_params.factors.velocity
 
-
     def move(
         self,
         best_global_position: np.ndarray[tp.Any, np.dtype[np.float64]],
