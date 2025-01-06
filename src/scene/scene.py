@@ -61,15 +61,14 @@ class Scene:
 
         print(total / (self._field.size * 1000 * self._field.size * 1000))
         '''
-        '''
         total = 0.
 
         for x in tqdm(np.arange(0, self._field.size, 0.001)):
             for y in [0., ]:
                 add_is_bigger = self._field.check_additional(x, y)
                 total += add_is_bigger
-
-        '''
+        print(total / (self._field.size * 1000) / 4)
+    
         '''
         for y in tqdm(np.arange(0, self._field.size, 0.001)):
             for x in [0.0, 10.0]:
