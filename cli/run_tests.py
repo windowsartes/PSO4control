@@ -22,8 +22,8 @@ def cli(  # noqa: ER0914
     n_iterations: int,
     n_resamples: int,
 ) -> None:
-    n_values: list[int] = [5, 7, 10, 15]
-    r_values: list[float] = [0.10, 0.25]
+    n_values: list[int] = [10,]
+    r_values: list[float] = [1.0,]
     spawns: list[str] = ["arc", "landing", "edge", "spot"]
 
     with open("./logs.txt", "w", encoding="utf-8") as logs:
@@ -33,7 +33,7 @@ def cli(  # noqa: ER0914
         Path(f"./logs/{spawn}").mkdir(parents=True, exist_ok=True)
 
         dataframes: dict[str, pd.DataFrame] = {}
-        names = ["normaltest", "shapiro", "cramer", "ks", "main_p_value"]
+        names: tuple[str, str, str, str, str] = ("normaltest", "shapiro", "cramer", "ks", "main_p_value")
 
         for name in names:
             data: dict[str | int, list[float]] = {}
@@ -89,9 +89,9 @@ def cli(  # noqa: ER0914
                     )
 
                     if spawn in ["arc", "landing"]:
-                        p: float = 0.70312424
+                        p: float = 0.50195176
                     else:
-                        p = 0.9505
+                        p = 0.8355
 
                     dataframes["main_p_value"].loc[r, n] = round(
                         sts.ttest_1samp(results, popmean=p * 0.4, alternative="less").pvalue,
@@ -109,4 +109,4 @@ def cli(  # noqa: ER0914
 
 
 if __name__ == "__main__":
-    cli()  # noqa: E1120
+    cli()  # noqa: E1120  # pylint: disable=no-value-for-parameter
