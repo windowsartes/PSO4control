@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from src.answer.answer import Point
-from src.solvers.solver_interface import SolverInterface
+# from src.solvers.solver_interface import SolverInterface
 from src.solvers.grey_wolf_optimization.wolf import Wolf, WolfImproved
 from src.solvers.grey_wolf_optimization import grey_wolf_optimization_params
 
