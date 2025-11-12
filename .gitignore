@@ -13,3 +13,5 @@ stored_field/
 config.json
 
 nohup.out
+
+*.txt
