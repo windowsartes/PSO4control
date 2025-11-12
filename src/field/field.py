@@ -6,7 +6,6 @@ from math import ceil
 
 import numpy as np
 import seaborn as sns
-# import sympy
 from matplotlib import pyplot as plt
 from matplotlib import colormaps as cm
 from pydantic import BaseModel
@@ -46,24 +45,6 @@ class FieldInterface(ABC):
     ) -> float:
         pass
 
-    """
-    @abstractmethod
-    def gradient(
-        self,
-        x: float,
-        y: float,
-    ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
-        pass
-
-    @abstractmethod
-    def hessian(
-        self,
-        x: float,
-        y: float,
-    ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
-        pass
-    """
-
     @abstractmethod
     def show(self) -> None:
         pass
@@ -81,8 +62,7 @@ class Field(FieldInterface):
         self,
         parameters: FieldParameters,
         additional_parameters: tp.Optional[AdditionalParameter],
-        target_function: type[tf.TargetFunctionInterface],
-        # target_function_symbolic: tp.Callable[[tf.SympyPoint], sympy.Expr],
+        target_function: tf.TargetFunctionInterface,
     ):
         self._parameters: FieldParameters = parameters
         self._additional_parameters: tp.Optional[AdditionalParameter] = additional_parameters
@@ -106,18 +86,6 @@ class Field(FieldInterface):
                 self._additional_max_values.append(
                     self._additional_target_functions[-1](tf.Point(*self._additional_parameters.centre[i]))
                 )
-
-        """
-        self._target_function_symbolic: sympy.Expr = \
-            target_function_symbolic(tf.SympyPoint(sympy.Symbol('x'), sympy.Symbol('y')))
-        self._gradient: sympy.Expr = sympy.Matrix([self._target_function_symbolic]).jacobian(
-            sympy.Matrix([sympy.Symbol('x'), sympy.Symbol('y')])
-        )
-        self._hessian: sympy.Expr = sympy.hessian(
-            self._target_function_symbolic,
-            [sympy.Symbol('x'), sympy.Symbol('y')]
-        )
-        """
 
     @property
     def size(self) -> float:
@@ -165,22 +133,6 @@ class Field(FieldInterface):
             max_value = max(max_value, candidate)
 
         return max_value
-
-    """
-    def gradient(
-        self,
-        x: float,
-        y: float,
-    ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
-        return np.array([float(value) for value in self._gradient.subs([('x', x), ('y', y)])])
-
-    def hessian(
-        self,
-        x: float,
-        y: float,
-    ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
-        return np.array([float(value) for value in self._hessian.subs([('x', x), ('y', y)])]).reshape((2, 2))
-    """
 
     def show(self) -> None:
         x_values: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = \

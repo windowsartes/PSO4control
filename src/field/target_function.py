@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import numpy as np
-# import sympy
 
 
 @dataclass
@@ -48,33 +47,43 @@ class Gaussian(TargetFunctionInterface):
         self,
         point: Point,
     ) -> float:
-        value: float = (1/(self._sigma*np.sqrt(2*np.pi))) * \
-                       np.exp(-((point.x - self._centre.x)**2 + (point.y - self._centre.y)**2)/(2*self._sigma))
-        return value
+        return (1/(self._sigma*np.sqrt(2*np.pi))) * \
+               np.exp(-((point.x - self._centre.x)**2 + (point.y - self._centre.y)**2)/(2*self._sigma))
 
 
-"""
-@dataclass
-class SympyPoint:
-    x: sympy.Symbol
-    y: sympy.Symbol
+@target_function
+class Rastrigin(TargetFunctionInterface):
+    def __init__(
+        self,
+        centre: Point = Point(5, 5),
+        sigma: None = None,
+    ):
+        super().__init__()
 
+        self._centre: Point = centre
 
-TARGET_FUNCTION_SYMBOLIC_REGISTER: dict[str, tp.Callable[[SympyPoint], sympy.Expr]] = {}
+    def __call__(
+        self,
+        point: Point,
+    ) -> float:
+        return -(20 + ((point.x - self._centre.x)**2 - 10 * np.cos(2 * np.pi * (point.x - self._centre.x))) + \
+            ((point.y - self._centre.y)**2 - 10 * np.cos(2 * np.pi * (point.y - self._centre.y)))) + 90 + 1e-8
+    
 
+@target_function
+class Griewank(TargetFunctionInterface):
+    def __init__(
+        self,
+        centre: Point = Point(5, 5),
+        sigma: None = None,
+    ):
+        super().__init__()
 
-def target_function_symbolic(
-    function: tp.Callable[[SympyPoint], sympy.Expr],
-) -> tp.Callable[[SympyPoint], sympy.Expr]:
-    TARGET_FUNCTION_SYMBOLIC_REGISTER[function.__name__[:-9]] = function
-    return function
+        self._centre: Point = centre
 
-
-@target_function_symbolic
-def gaussian_symbolic(
-    point: SympyPoint,
-    centre: Point = Point(5, 5),
-    sigma: float = 10,
-) -> sympy.Expr:
-    return (1/(sigma*np.sqrt(2*np.pi))) * sympy.exp(-((point.x - centre.x)**2 + (point.y - centre.y)**2)/(2*sigma))
-"""
+    def __call__(
+        self,
+        point: Point,
+    ) -> float:
+        return -(1 + ((point.x - self._centre.x)** 2 + (point.y - self._centre.y) ** 2) / 4000 - \
+            np.cos((point.x - self._centre.x)) * np.cos((point.y - self._centre.y) / np.sqrt(2))) + 2.0125 + 1e-8
