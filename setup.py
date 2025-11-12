@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name="pso4control",
+    name="src",
     version="2.0.1",
     description="Lil package for studying applicability of PSO in control theory",
     author="Nikolai Makarov",
