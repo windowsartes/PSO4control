@@ -6,12 +6,6 @@ from src.solvers.swarm.swarm_params import ParticleCoefficients, SpawnParams
 
 
 class Particle:
-    """
-    Частица умеет только двигаться, после каждого движения она возвращает своё новое положение.
-    Сцена его корректирует и прописывает новое положение частицы с помощью её сеттера.
-    Сцена же считает скор, полученный частицей и прсотавляет его. Лучше положение частицы и её лучший скор
-    также обновляет сцена. Лучший скор и лучшее положение роя также обновляетс сцена.
-    """
     def __init__(
         self,
         field_size: float,
@@ -23,20 +17,7 @@ class Particle:
         self._position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.empty((2))
         self._velocity: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.empty((2))
 
-        if spawn_params.type == "full_location":
-            self._position = np.array(
-                [
-                    np.random.uniform(0, field_size),
-                    np.random.uniform(0, field_size),
-                ]
-            )
-            self._velocity = np.array(
-                [
-                    np.random.uniform(-field_size, field_size),
-                    np.random.uniform(-field_size, field_size),
-                ]
-            )
-        elif spawn_params.type == "edge":
+        if spawn_params.type == "edge":
             spawn_edge: int = np.random.randint(4)
             if spawn_edge == 0:  # left
                 self._position = np.array(
@@ -188,7 +169,7 @@ class Particle:
                     ]
                 )
             else:
-                raise ValueError("spwan edge must be int from 0 to 3")
+                raise ValueError("spawn edge must be int from 0 to 3")
 
             if spawn_params.finish_edge == 0:  # left
                 finish_position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = np.array(
@@ -265,7 +246,7 @@ class Particle:
                     ]
                 )
             else:
-                raise ValueError("spwan edge must be int from 0 to 3")
+                raise ValueError("spawn edge must be int from 0 to 3")
 
             if spawn_params.finish_edge == 0:  # left
                 finish_position = np.array(
@@ -316,7 +297,7 @@ class Particle:
                 ]
             )
         else:
-            raise ValueError("spaen type must be 'spot', 'edge', 'arc' or 'landing'")
+            raise ValueError("spawn type must be either 'spot', 'edge', 'arc' or 'landing'")
 
         self._best_score: float = 0.
         self._best_position: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]] = self._position
@@ -371,13 +352,6 @@ class Particle:
     @property
     def position(self) -> np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]]:
         return self._position
-
-    @position.setter
-    def position(
-        self,
-        new_value: np.ndarray[tuple[int, ...], np.dtype[np.floating[tp.Any]]],
-    ) -> None:
-        self._position = new_value
 
     @property
     def path_length(self) -> float:
