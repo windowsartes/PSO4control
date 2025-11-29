@@ -20,4 +20,4 @@ def cli(path_to_config: str) -> None:
 
 
 if __name__ == "__main__":
-    cli()  # noqa: E1120  # pylint: disable=no-value-for-parameter
+    cli()

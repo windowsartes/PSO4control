@@ -1,10 +1,8 @@
 import json
-from pathlib import Path
 from time import gmtime, strftime
 
 import click
 import numpy as np
-import pandas as pd
 from joblib import Parallel, delayed
 
 from src.scene.scene import Scene
@@ -19,61 +17,49 @@ def cli(
     n_jobs: int,
     n_iterations: int,
 ) -> None:
-    # spawns: list[str] = ["arc", "landing", "edge", "spot"]
-    # noise_scale_values = [0.05, 0.075]
-    with open("./logs.txt", "w", encoding="utf-8") as logs:
-        logs.write(f'[{strftime("%Y-%m-%d %H:%M:%S", gmtime())}]: about to start\n')
-
-    spawn_n_r_pairs: tuple[tuple[str, int, float], ...] = (
+    n_r_strategy_pairs: tuple[tuple[int, float, str], ...] = (
+        (10, 0.1, "spot"),
     )
 
-    unique_n: tuple[int, ...] = tuple(set([n for _, n, _ in spawn_n_r_pairs]))
-    unique_r: tuple[float, ...] = tuple(set([r for _, _, r in spawn_n_r_pairs]))
-    unique_spawns: tuple[str, ...] = tuple(set([spawn for spawn, _, _ in spawn_n_r_pairs]))
+    with open(
+        path_to_config,
+        "r",
+        encoding="utf-8",
+    ) as config_file:
+        config = json.load(config_file)
 
-    dataframes: dict[str, dict[str, pd.DataFrame]] = {}
+    logs_file = f"./results/{config['field']['type'].lower()}_{config['solver']['specification']}.txt"
 
-    for spawn in unique_spawns:
-        Path(f"./logs/{spawn}").mkdir(
-            parents=True,
-            exist_ok=True,
-        )
+    with open(
+        logs_file,
+        "w",
+        encoding="utf-8",
+    ) as logs:
+        logs.write(f'[{strftime("%Y-%m-%d %H:%M:%S", gmtime())}]: about to start\n')
 
-        dataframes[spawn] = {}
-
-        names: tuple[str, str, str, str] = ("mear_error", "border_error", "mean_path", "border_path")
-
-        for name in names:
-            data: dict[str | int, tuple[float, ...]] = {}
-            for n in unique_n:
-                data[n] = tuple([-0.001] * len(unique_r))
-            data["r"] = unique_r
-
-            df = pd.DataFrame(data, dtype=float)
-            df = df.set_index("r")
-
-            dataframes[spawn][name] = df
-
-        for name in names:
-            dataframes[spawn][name].to_csv(
-                f"./logs/{spawn}/{name}.tsv",
-                sep="\t",
-            )
-
-    # for noise_scale in noise_scale_values:
-    for spawn, n, r in spawn_n_r_pairs:
+    for n, r, strategy in n_r_strategy_pairs:
         with open(
             path_to_config,
             "r",
             encoding="utf-8",
         ) as config_file:
             config = json.load(config_file)
-            # config["noise"]["params"]["scale"] = noise_scale
-        config["solver"]["params"]["n_particles"] = n
-        config["solver"]["params"]["connection_radius"] = r
-        config["solver"]["params"]["spawn"]["type"] = spawn
 
-        n_rooted: float = float(np.sqrt(config["solver"]["params"]["n_iterations"]))
+        if config['solver']['type'] == "swarm":
+            config["solver"]["params"]["n_particles"] = n
+        elif config['solver']['type'] == "grey_wolf_optimization":
+            config["solver"]["params"]["n_wolves"] = n
+        elif config['solver']['type'] == "artificial_bee_colony":
+            config["solver"]["params"]["n_bees"] = n
+            config["solver"]["params"]["source_limit"] = n - n // 2
+
+        config["solver"]["params"]["connection_radius"] = r
+        config["solver"]["params"]["spawn"]["type"] = strategy
+
+        if config['field']['type'] == "Griewank" or config['field']['type'] == "Rastrigin":
+            config["field"]["additional_params"] = None
+
+        n_rooted: float = float(np.sqrt(n_iterations))
 
         results = (Parallel(n_jobs=n_jobs)(
             delayed(Scene(config=config).solve)() for i in range(n_iterations))
@@ -82,26 +68,32 @@ def cli(
         error = np.array(results)[:, 0]
         path = np.array(results)[:, 1]
 
-        mean_error: float = float(np.mean(error))
-        border_error: float = float(2 * np.std(error, ddof=1) / n_rooted)
+        mean_error: float = round(float(np.mean(error)), 3)
+        border_error: float = round(float(2 * np.std(error, ddof=1) / n_rooted), 3)
 
-        mean_path: float = float(np.mean(path))
-        border_path: float = float(2 * np.std(path, ddof=1) / n_rooted)
+        mean_path: float = round(float(np.mean(path)), 2)
+        border_path: float = round(float(2 * np.std(path, ddof=1) / n_rooted), 2)
 
-        dataframes[spawn]["mean_error"] = mean_error
-        dataframes[spawn]["border_error"] = border_error
-        dataframes[spawn]["mean_path"] = mean_path
-        dataframes[spawn]["border_path"] = border_path
-
-    for spawn in unique_spawns:
-        names = ("mean_error", "border_error", "mean_path", "border_path")
-
-        for name in names:
-            dataframes[spawn][name].to_csv(
-                f"./logs/{spawn}/{name}.tsv",
-                sep="\t",
+        with open(
+            logs_file,
+            "a",
+            encoding="utf-8",
+        ) as logs:
+            logs.write(
+                f'[{strftime("%Y-%m-%d %H:%M:%S", gmtime())}]: ' +\
+                f'ended with strategy = {strategy} | n = {n} | r = {r}; ' +\
+                f'error: {mean_error} +/- {border_error}; path: {mean_path} +/- {border_path}\n'
             )
+
+    with open(
+        logs_file,
+        "a",
+        encoding="utf-8",
+    ) as logs:
+        logs.write(
+            f'[{strftime("%Y-%m-%d %H:%M:%S", gmtime())}]: ended',
+        )
 
 
 if __name__ == "__main__":
-    cli()  # noqa: E1120  # pylint: disable=no-value-for-parameter
+    cli()
