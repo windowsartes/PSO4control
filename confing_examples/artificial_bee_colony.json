@@ -1,13 +1,4 @@
 {
-    "scheduler":
-    {
-        "type": "Step",
-        "params":
-        {
-            "gamma": 0.9,
-            "step_size": 100
-        }
-    },
     "field":
     {
         "type": "Gaussian",
@@ -22,7 +13,7 @@
         {
             "centre": [[5.0, 1.0], [5.0, 9.0], [1.0, 5.0], [9.0, 5.0]],
             "sigma": 2.0,
-            "coeff": 0.95
+            "coeff": 0.90
         }
     },
     "verbosity":
@@ -69,17 +60,18 @@
     },
     "solver":
     {
-        "type": "swarm",
-        "specification": "decentralized",
+        "type": "artificial_bee_colony",
+        "specification": "artificial_bee_colony_adaptive_exploration",
         "params":
         {
-            "n_iterations": 300,
-            "n_particles": 15,
+            "n_iterations": 200,
+            "n_bees": 15,
+            "source_limit": 8,
             "connection_radius": 0.25,
             "connection_dropout_probability": 0.0,
             "spawn":
             {
-                "type": "edge",
+                "type": "landing",
                 "factors":
                 {
                     "velocity": 100.0,
@@ -87,12 +79,7 @@
                     "landing": 10.0
                 }
             },
-            "coefficients":
-            {
-                "w": 4,
-                "c1": 2,
-                "c2": 2
-            }
+            "a_coef": 2
         }
     }
 }

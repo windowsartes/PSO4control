@@ -106,7 +106,7 @@ class RelativeVarianceNoise(NoiseBase):
         return float(
             np.random.normal(
                 self._params.loc,
-                field_value * self._params.scale,
+                abs(field_value) * self._params.scale,
                 size=1,
             )[0]
         )

@@ -10,6 +10,6 @@ class SolverFactory:
         filed_size: float,
         field_quality_scale: float,
     ) -> SolverInterface:
-        solver_factory_module = importlib.import_module(f"src.solvers.{config['type']}.{config['type']}_factory")
+        solver_factory_module = importlib.import_module(f"src.solvers.{config['type'].lower()}.{config['type'].lower()}_factory")
 
         return solver_factory_module.SolverFactory().construct(config, filed_size, field_quality_scale)
