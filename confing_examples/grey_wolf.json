@@ -1,0 +1,84 @@
+{
+    "field":
+    {
+        "type": "Gaussian",
+        "params":
+        {
+            "size": 10.0,
+            "quality_scale": 100.0,
+            "centre": [5.0, 5.0],
+            "sigma": 4.0
+        },
+        "additional_params":
+        {
+            "centre": [[5.0, 1.0], [5.0, 9.0], [1.0, 5.0], [9.0, 5.0]],
+            "sigma": 2.0,
+            "coeff": 0.90
+        }
+    },
+    "verbosity":
+    {
+        "value": 1,
+        "period": 100
+    },
+    "answer":
+    {
+        "answers":
+        [
+            {
+                "x": 5.0,
+                "y": 5.0,
+                "value": 0.039894
+            }
+        ]
+    },
+    "early_stopping":
+    {
+        "type": "Swarm",
+        "params":
+        {
+            "coordinate":
+            {
+                "epsilon": 0.01,
+                "ratio": 0.75
+            },
+            "velocity":
+            {
+                "epsilon": 0.01,
+                "ratio": 0.5
+            }
+        }
+    },
+    "noise":
+    {
+        "type": "RelativeVariance",
+        "params":
+        {
+            "loc": 0.0,
+            "scale": 0.075
+        }
+    },
+    "solver":
+    {
+        "type": "grey_wolf_optimization",
+        "specification": "grey_wolf_optimization_improved",
+        "params":
+        {
+            "n_iterations": 200,
+            "n_wolves": 15,
+            "connection_radius": 0.25,
+            "connection_dropout_probability": 0.0,
+            "spawn":
+            {
+                "type": "landing",
+                "factors":
+                {
+                    "velocity": 100.0,
+                    "position": 10.0,
+                    "landing": 10.0
+                }
+            },
+            "a_coef": 2
+        }
+    }
+}
